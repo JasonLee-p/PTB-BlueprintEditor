@@ -11,8 +11,12 @@ class ReadDesign:
         # ShipInfo
         self.ShipInfo = self.root.find('ShipInfo')
         self.ShipName = self.ShipInfo.attrib['ShipName']
+        self.Introduction = self.root.find('CopyWriting').attrib['Text']
         self.HP = int(self.ShipInfo.attrib['HP'])
-        self.CP = int(self.ShipInfo.attrib['CP'])
+        try:
+            self.CP = int(self.ShipInfo.attrib['CP'])
+        except ValueError:
+            self.CP = None
         self.weight = float(self.ShipInfo.attrib['weight'])
         self.TotalBuoyancy = float(self.ShipInfo.attrib['TotalBuoyancy'])
         self.SecurityCode = self.ShipInfo.attrib['SecurityCode']
@@ -44,9 +48,32 @@ class ReadDesign:
         self.Len_Wid_Dra = f"{self.Len_Wid}  :1  :{self.Dra_Wid}"
         self.Volume_in_m = round(27 * self.Volume, 3)
         self.Displacement_in_t = round(27 * self.Displacement, 3)
-        self.Drag = self.ShipCard.find('Drag').attrib['Value']
+        self.Drag = float(self.ShipCard.find('Drag').attrib['Value'])
+        self.Range = int(self.ShipCard.find('Range').attrib['Value'])
+        self.Power = int(self.ShipCard.find('HP').attrib['Value'])
+        self.ViewRange = 0
+        self.Concealment = 0
+        try:
+            self.AmmoSupply = int(self.ShipCard.find('Magazine').attrib['Value'])
+        except TypeError:
+            self.AmmoSupply = 0
+        try:
+            self.NeedAmmo = int(self.ShipCard.find('NeedMagazine').attrib['Value'])
+        except TypeError:
+            self.NeedAmmo = 0
+        self.Ammo = f"需求 {self.NeedAmmo} 供给 {self.AmmoSupply}"
+        try:
+            self.MainWeapon = int(self.ShipCard.find('MainWeapon').attrib['Value'])
+        except TypeError:
+            self.MainWeapon = 0
+        try:
+            self.MainArmor = int(self.ShipCard.find('MainArmor').attrib['Value'])
+        except TypeError:
+            self.MainArmor = 0
         self.AA = self.ShipCard.find('AA').attrib['Value']
-        self.Planes = self.ShipCard.find('Plane').attrib['Value']
+        self.Aircraft = self.ShipCard.find('Plane').attrib['Value']
+        self.SpendTime = float(self.ShipCard.find('SpendTime').attrib['Value'])
+        self.Price = int(self.ShipCard.find('SpendMoney').attrib['Value'])
         # ________________________________________________________________________________钢筋
         self._rebars = self.root.find('rebars')
         self.Rebars = {

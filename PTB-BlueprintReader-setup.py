@@ -2,32 +2,17 @@
     This file is used to setup the PTB-BlueprintReader app.
 """
 import base64
+import ctypes
 import os
+import subprocess
+import sys
 import threading
 import time
 import tkinter as tk
 from tkinter import ttk
-
-import pythoncom
 from win32com.client import Dispatch
-from win32comext.shell import shell
 
 import PROGRAM
-
-
-def get_admin_permission():
-    os.system('powershell "Start-Process cmd -Verb RunAs"')
-
-
-def create_shortcut(target_path, shortcut_path, icon_path=None, start_in=None):
-    # 创建快捷方式对象
-    shortcut = Dispatch("WScript.Shell").CreateShortcut(shortcut_path)
-    shortcut.TargetPath = target_path
-    if icon_path:
-        shortcut.IconLocation = icon_path
-    if start_in:
-        shortcut.WorkingDirectory = start_in
-    shortcut.Save()
 
 
 def find_ptb():
@@ -69,6 +54,7 @@ def setup():
     count1 = 0
     count2 = 0
     while Unfinished:
+        print('正在安装...')
         if PATH is not None and count1 == 0:
             tk.Label(window, text=f'找到路径{PATH}', font=('微软雅黑', FONT_SIZE), bg='beige').pack()
             tk.Label(window, text='...正在生成程序...', font=('微软雅黑', FONT_SIZE), bg='beige').pack()
@@ -87,7 +73,9 @@ def setup():
 def start():
     global PATH
     try:
-        os.startfile(os.path.join(PATH, 'PTB-BlueprintReader.exe'))
+        # 给予管理员权限
+        subprocess.run('powershell -Command "Start-Process -FilePath '
+                       f'\'{os.path.join(PATH, "PTB-BlueprintReader.exe")}\' -Verb RunAs"')
         window.destroy()
     except Exception as e:
         if "不是有效的 Win32 应用程序。" in str(e):
@@ -122,7 +110,10 @@ def check_whether_installed():
 
 
 if __name__ == '__main__':
-    # get_admin_permission()
+    # 给自己加上管理员权限
+    if not ctypes.windll.shell32.IsUserAnAdmin():
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
+        sys.exit()
     FONT_SIZE = 10
     PATH = None
     Unfinished = True
@@ -145,26 +136,26 @@ if __name__ == '__main__':
         tk.Label(window, text='...您的程序已经是最新版本，即将启动...', font=('微软雅黑', FONT_SIZE), bg='beige').pack()
         time.sleep(1)
         start()
-        Unfinished = False
-    else:
+    else:  # 未安装，开始安装
         try:
             # 把PGM从base64解码后写入exe文件
-            with open(os.path.join(PATH, 'PTB-BlueprintReader.exe'), 'wb') as f:
+            path = os.path.join(PATH, 'PTB-BlueprintReader.exe')
+            with open(path, 'wb') as f:
                 f.write(base64.b64decode(PROGRAM.PGM))
             ProgramFinished = True
             # 在桌面生成该程序的快捷方式：
             # 1.获取桌面路径
             desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-            # 2.生成快捷方式
-            shortcut = pythoncom.CoCreateInstance(
-                shell.CLSID_ShellLink, None,
-                pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink
-            )
-            shortcut.SetPath(os.path.join(PATH, 'PTB-BlueprintReader.exe'))
-            shortcut.SetWorkingDirectory(PATH)
-            shortcut.SetIconLocation(os.path.join(PATH, 'PTB-BlueprintReader.exe'), 0)
-            shortcut.QueryInterface(pythoncom.IID_IPersistFile).Save(
-                os.path.join(desktop_path, '工艺战舰图纸阅读器.lnk'), 0)
+            # 2.生成快捷方式（用win32com模块）
+            shell = Dispatch("WScript.Shell")
+            shortcut_path = os.path.join(desktop_path, '工艺战舰图纸阅读器.lnk')
+            shortcut = shell.CreateShortCut(shortcut_path)
+            shortcut.TargetPath = os.path.join(PATH, 'PTB-BlueprintReader.exe')
+            shortcut.WorkingDirectory = PATH
+            shortcut.Arguments = ''
+            shortcut.WindowStyle = 1
+            shortcut.Description = '工艺战舰图纸阅读器'
+            shortcut.save()
 
         except Exception as _e:
             if "拒绝访问。" in str(_e):
@@ -178,4 +169,7 @@ if __name__ == '__main__':
                 tk.Label(window, text=f'安装失败！\n{_e}', font=('微软雅黑', FONT_SIZE), bg='beige',
                          foreground='firebrick').pack(side='bottom', ipady=20)
     Unfinished = False
+    # 弹出消息框
+    if ProgramFinished:
+        tk.Label(window, text='...安装完成，即将启动...', font=('微软雅黑', FONT_SIZE), bg='beige').pack()
     window.mainloop()
