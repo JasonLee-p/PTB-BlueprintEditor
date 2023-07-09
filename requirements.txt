@@ -1,6 +1,0 @@
-pip==21.3.1
-PyOpenGL-accelerate==3.1.7
-PyOpenGL==3.1.7
-pyopengltk==0.0.4
-setuptools==60.2.0
-wheel==0.37.1

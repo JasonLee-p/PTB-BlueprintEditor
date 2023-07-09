@@ -23,10 +23,10 @@ own_path = os.path.dirname(__file__)
 
 def set_window(window, title: str, transparent=True):
     """
-    initialize the root, set the root size, title, icon, etc.
+    initialize the window, set the window size, title, icon, etc.
     :param window: tk.Tk() object.
-    :param title: str, the title of the root.
-    :param transparent: bool, whether the root is transparent.
+    :param title: str, the title of the window.
+    :param transparent: bool, whether the window is transparent.
     """
     if transparent:
         window.attributes("-alpha", 0.95)

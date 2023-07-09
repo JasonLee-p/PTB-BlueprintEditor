@@ -39,6 +39,9 @@ class ReadDesign:
         self.Width_in_m = round(3 * self.Width, 3)
         self.Height_in_m = round(3 * self.Height, 3)
         self.Draft_in_m = round(3 * self.Draft, 3)
+        self.Len_Wid = round(self.Length / self.Width, 2)
+        self.Dra_Wid = round(self.Draft / self.Width, 2)
+        self.Len_Wid_Dra = f"{self.Len_Wid}  :1  :{self.Dra_Wid}"
         self.Volume_in_m = round(27 * self.Volume, 3)
         self.Displacement_in_t = round(27 * self.Displacement, 3)
         self.Drag = self.ShipCard.find('Drag').attrib['Value']
@@ -68,9 +71,12 @@ class ReadDesign:
             "group": [],
             "hallowOut": [],
         }
-        for rebar in self._rebars:
-            for key in self.Rebars.keys():
-                self.Rebars[key].append(rebar.attrib[key])
+        if self._rebars is None:
+            self.Rebars = None
+        else:
+            for rebar in self._rebars:
+                for key in self.Rebars.keys():
+                    self.Rebars[key].append(rebar.attrib[key])
         # ________________________________________________________________________________钢板
         self._airfixs = self.root.find('airfixs')
         self.AirFixs = {
@@ -91,13 +97,16 @@ class ReadDesign:
             "colB": []
         }
         self._airfix_points = []
-        for airfix in self._airfixs:
-            for key in self.AirFixs.keys():
-                self.AirFixs[key].append(airfix.attrib[key])
-            # 钢板的所有point元素全部作为list存到self._airfix_points中
-            points = [list(p.attrib.values()) for p in airfix.findall('point')]
-            self._airfix_points.append(points)
-        self.AirFixs['points'] = self._airfix_points
+        if self._airfixs is None:
+            self.AirFixs = None
+        else:
+            for airfix in self._airfixs:
+                for key in self.AirFixs.keys():
+                    self.AirFixs[key].append(airfix.attrib[key])
+                # 钢板的所有point元素全部作为list存到self._airfix_points中
+                points = [list(p.attrib.values()) for p in airfix.findall('point')]
+                self._airfix_points.append(points)
+            self.AirFixs['points'] = self._airfix_points
         # ________________________________________________________________________________装甲板
         self._armors = self.root.find('armorboards')
         self.ArmorBoards = {
@@ -118,9 +127,12 @@ class ReadDesign:
             "time": [],
             "cost": [],
         }
-        for armor in self._armors:
-            for key in self.ArmorBoards.keys():
-                self.ArmorBoards[key].append(armor.attrib[key])
+        if self._armors is None:
+            self.ArmorBoards = None
+        else:
+            for armor in self._armors:
+                for key in self.ArmorBoards.keys():
+                    self.ArmorBoards[key].append(armor.attrib[key])
         # ________________________________________________________________________________MODs
         self._mods = self.root.find('mods')
         self.Mods = {
@@ -157,8 +169,9 @@ class ReadDesign:
         print(f"排水体积比：{self.weight_ratio}")
         print(f"水线长：{self.Length_in_m}")
         print(f"水线宽：{self.Width_in_m}")
-        print(f"舰高：{self.Height_in_m}")
         print(f"吃水：{self.Draft_in_m}")
+        print(f"长宽吃水比：{self.Length_in_m / self.Width_in_m}")
+        print(f"舰高：{self.Height_in_m}")
         print(f"方形系数：{self.SquareCoefficient}")
         print(f"阻力系数：{self.Drag}")
 
