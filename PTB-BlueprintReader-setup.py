@@ -73,7 +73,9 @@ def setup():
 def start():
     global PATH
     try:
-        # 给予管理员权限
+        # 变更目录
+        os.chdir(PATH)
+        # 启动程序
         subprocess.run('powershell -Command "Start-Process -FilePath '
                        f'\'{os.path.join(PATH, "PTB-BlueprintReader.exe")}\' -Verb RunAs"')
         window.destroy()

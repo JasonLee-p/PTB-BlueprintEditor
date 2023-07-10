@@ -52,7 +52,9 @@ class Part:
         if self.id2name(Id):
             self.ID = self.id2name(Id)
         else:
-            raise RuntimeWarning(f'未知的零件ID: {Id}')
+            self.ID = Id
+            print(f'遇到未知的零件ID: {Id}\n位置:{position} 大小: {scale} 颜色: {color}\n')
+
         self.Name = name
         self.Weight = weight
         self.Buoyancy = buoyancy
@@ -165,21 +167,32 @@ class ReadDesign:
         self.Parts = None
         try:
             self.CP = int(self.ShipInfo.attrib['CP'])
-        except ValueError:
+            self.SecurityCode = self.ShipInfo.attrib['SecurityCode']
+        except KeyError:
             self.CP = None
+            self.SecurityCode = None
         self.weight = float(self.ShipInfo.attrib['weight'])
         self.TotalBuoyancy = float(self.ShipInfo.attrib['TotalBuoyancy'])
-        self.SecurityCode = self.ShipInfo.attrib['SecurityCode']
-        # ShipType
-        self.ShipType = self.root.find('ShipType')
-        self.Type = self.ShipType.attrib['type']
-        self.efficiency = float(self.ShipType.attrib['efficiency'])
-        self.CheckCode1 = self.ShipType.attrib['checkCode']
-        # CheakCode
-        self.CheakCode = self.root.find('CheakCode')
-        self.DesignerID = self.CheakCode.attrib['Designer']
-        self.DesignTimeID = self.CheakCode.attrib['DesignTime']
-        self.CheckCode2 = self.CheakCode.attrib['Code']
+        try:
+            # ShipType
+            self.ShipType = self.root.find('ShipType')
+            self.Type = self.ShipType.attrib['type']
+            self.efficiency = float(self.ShipType.attrib['efficiency'])
+            self.CheckCode1 = self.ShipType.attrib['checkCode']
+            # CheakCode
+            self.CheakCode = self.root.find('CheakCode')
+            self.DesignerID = self.CheakCode.attrib['Designer']
+            self.DesignTimeID = self.CheakCode.attrib['DesignTime']
+            self.CheckCode2 = self.CheakCode.attrib['Code']
+        except AttributeError:
+            self.ShipType = None
+            self.Type = None
+            self.efficiency = None
+            self.CheckCode1 = None
+            self.CheakCode = None
+            self.DesignerID = None
+            self.DesignTimeID = None
+            self.CheckCode2 = None
         # ________________________________________________________________________________ShipCard
         self.ShipCard = self.root.find('ShipCard')
         self.Designer = self.ShipCard.find('Designer').attrib['Value']
@@ -217,12 +230,21 @@ class ReadDesign:
         except TypeError:
             self.MainWeapon = 0
         try:
-            self.MainArmor = int(self.ShipCard.find('MainArmor').attrib['Value'])
+            self.MainArmor = int(float(self.ShipCard.find('MainArmor').attrib['Value']))
         except TypeError:
             self.MainArmor = 0
-        self.AA = self.ShipCard.find('AA').attrib['Value']
-        self.Aircraft = self.ShipCard.find('Plane').attrib['Value']
-        self.SpendTime = float(self.ShipCard.find('SpendTime').attrib['Value'])
+        try:
+            self.AA = self.ShipCard.find('AA').attrib['Value']
+        except AttributeError:
+            self.AA = "0 / 0 / 0"
+        try:
+            self.Aircraft = self.ShipCard.find('Plane').attrib['Value']
+        except AttributeError:
+            self.Aircraft = "0"
+        try:
+            self.SpendTime = float(self.ShipCard.find('SpendTime').attrib['Value'])
+        except AttributeError:
+            self.SpendTime = 0
         try:
             self.Price = int(self.ShipCard.find('SpendMoney').attrib['Value'])
         except ValueError:
@@ -333,9 +355,12 @@ class ReadDesign:
             "modType": [],
             "shaftType": []
         }
-        for mod in self._mods:
-            for key in self.Mods.keys():
-                self.Mods[key].append(mod.attrib[key])
+        if self._mods is None:
+            self.Mods = None
+        else:
+            for mod in self._mods:
+                for key in self.Mods.keys():
+                    self.Mods[key].append(mod.attrib[key])
         self.weight_ratio = round(self.Displacement_in_t / self.Volume_in_m, 3)
         # 方形系数
         self.SquareCoefficient = round(

@@ -18,10 +18,11 @@ class MainHandler:
     def __init__(self):
         self.tree1 = GUI.Left.tree
         self.combox = GUI.Left.combox
-        self.combox.box.bind('<<ComboboxSelected>>', self.combox_update)
-        self.combox.box.bind('<Return>', self.combox_update)
-        self.combox.box.bind('<Leave>', self.combox_update)
-        self.combox.box.bind('<FocusOut>', self.combox_update)
+        self.combox.bind('<<ComboboxSelected>>', self.combox_update)
+        self.combox.bind('<Return>', self.combox_update)
+        self.combox.bind('<Leave>', self.combox_update)
+        self.combox.bind('<FocusOut>', self.combox_update)
+        self.combox.bind('<MouseWheel>', self.combox_update)
         self.last_design = None
         self.DesignReader = None
 
@@ -30,9 +31,9 @@ class MainHandler:
         更新所有信息
         :return:
         """
-        if self.last_design == self.combox.box.get():
+        if self.last_design == self.combox.get():
             return
-        file_name = self.combox.box.get() + '.xml'
+        file_name = self.combox.get() + '.xml'
         # 在同目录下寻找有Design字样的文件夹:
         for root, dirs, files in os.walk(os.path.abspath('.')):
             for _dir in dirs:
@@ -42,7 +43,7 @@ class MainHandler:
                         self.DesignReader = ReadDesign(path)
                         GUI.Left.update_treeview()
                         GUI.ShowFrame.update_messages()
-                        self.last_design = self.combox.box.get()
+                        self.last_design = self.combox.get()
                         return
 
 
@@ -62,7 +63,7 @@ class TkinterGUI:
         self.root.iconbitmap(self.ICO_PATH)
         # notebook
         self.notebook_main = ttk.Notebook(self.root)
-        self.Bottom = BottomFrame(self.root, redirect=False)
+        self.Bottom = BottomFrame(self.root, redirect=True)
         self.Left = LeftFrame(self.root)
         # 初始化标签页
         self.Frame_BP = tk.Frame(bg=BG_COLOUR)
@@ -142,11 +143,11 @@ class CompareFrame:
         tk.Frame(master=self.basic, bg=BG_COLOUR2, height=3).pack(side='top', fill='x', expand=False)
 
     def start(self):
-        if self.combox.box.get() == '':
+        if self.combox.get() == '':
             messagebox.showerror('错误', '请选择要对比的设计！')
             return
         # 判断是否选择了两个不同的设计
-        if self.combox.box.get() == GUI.Left.combox.box.get():
+        if self.combox.get() == GUI.Left.combox.get():
             messagebox.showerror('错误', '请选择两个不同的设计！')
             return
         # 开始对比
@@ -181,13 +182,13 @@ class ShowShipFrame:
             self.canvas.create_text(
                 820, _H, text=self.text_dict["right"][i], anchor='sw', font=(FONT0, 18), fill='white', tags="values")
         # 按钮
-        self.BtPos = [780, 657]
+        self.BtPos = [775, 657]
         self.Button = self.canvas.create_rectangle(
             self.BtPos[0] - 130, self.BtPos[1] - 20, self.BtPos[0] + 130, self.BtPos[1] + 20,
             outline='white', width=2)
         # 文字
         self.ButtonText = self.canvas.create_text(
-            self.BtPos[0], self.BtPos[1], text="船只介绍", anchor='center', font=(FONT0, 13), fill='white')
+            self.BtPos[0], self.BtPos[1], text="船只介绍", anchor='center', font=(FONT0, 12), fill='white')
         # 绑定事件
         self.canvas.tag_bind(self.Button, '<Button-1>', self.button_down)
         self.canvas.tag_bind(self.ButtonText, '<Button-1>', self.button_down)
@@ -212,7 +213,7 @@ class ShowShipFrame:
         if self.canvas.itemcget(self.ButtonText, 'text') == '船只介绍':
             self.canvas.itemconfig(self.ButtonText, text='性能参数')
             self.canvas.itemconfig('values', state='hidden')
-            self.IntroCv.place(x=780, y=135, anchor='n')
+            self.IntroCv.place(x=775, y=135, anchor='n')
         else:
             self.canvas.itemconfig(self.ButtonText, text='船只介绍')
             self.canvas.itemconfig('values', state='normal')
@@ -261,10 +262,10 @@ class ShowShipFrame:
         # 顶部
         try:
             self.canvas.create_text(
-                780, 60, text=f"{DR.ShipName}", anchor='center', font=(FONT0, 22), fill='white',
+                self.BtPos[0], 60, text=f"{DR.ShipName}", anchor='center', font=(FONT0, 23), fill='white',
                 tags=('content',))
             self.canvas.create_text(
-                780, 115, text=f"设计者:{DR.Designer}", anchor='center', font=(FONT0, 18), fill='white',
+                self.BtPos[0], 115, text=f"设计者:{DR.Designer}", anchor='center', font=(FONT0, 18), fill='white',
                 tags=('content',))
         except AttributeError:
             return

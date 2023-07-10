@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This module is used to create the GUI of the program.
+    This module is used to simplify the use of tkinter.
 """
 import ctypes
 import sys
@@ -522,8 +522,12 @@ class ComboBoxMouseWheel2:
 def text_with_combox(master, text, font, text_w, combox_w, combox_list, add_wu=True):
     combox_list = ["无"] + list(combox_list) if add_wu else list(combox_list)
     title(text, BG_COLOUR)(None, master, 'left', font[1], False, text_w, hei=1, padx=0, pady=0)
-    c = ComboBoxMouseWheel2(
-        master, None, 'left', font, combox_w, combox_list[0], combox_list[1:], None)
+    # c = ComboBoxMouseWheel2(
+    #     master, None, 'left', font, combox_w, combox_list[0], combox_list[1:], None)
+    c = ttk.Combobox(master, justify="center", font=font, width=combox_w, values=combox_list)
+    # 设置默认值
+    c.current(0)
+    c.pack(side='left', expand=False, padx=5, pady=5)
     return c
 
 

@@ -1,7 +1,7 @@
 """
     This file is used to transform PartID to PartName.
+    这是作者爆肝整理出来的所有ID和零件名映射，大家尽情使用吧！
 """
-
 PartType1 = {  # 船体
     '1': '船体1*1*1',
     '101': '船体2*1*1',
