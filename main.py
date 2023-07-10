@@ -385,6 +385,7 @@ class LeftFrame:
             ('排水体积比', ''),
             ('长宽吃水比', ''),
             ('方形系数', ''),
+            ('装甲舱重量', ''),
         ]
 
         # 批量插入数据
@@ -397,6 +398,11 @@ class LeftFrame:
         :return:
         """
         DR = Handler.DesignReader
+        DR.read_parts()
+        total_armor_weight = 0.0
+        for armor in DR.Parts['装甲']:
+            total_armor_weight += float(armor.Weight)
+        total_armor_weight = round(total_armor_weight, 3)
         # 直接修改treeview的值
         datas = [
             DR.DesignerID,
@@ -404,6 +410,7 @@ class LeftFrame:
             str(DR.weight_ratio),
             str(DR.Len_Wid_Dra),
             str(DR.SquareCoefficient),
+            f"{total_armor_weight} t",
         ]
         try:
             for i in range(len(datas)):

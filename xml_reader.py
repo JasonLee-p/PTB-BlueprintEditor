@@ -3,7 +3,7 @@
 
 该文件引用了https://github.com/ZhangBohan233/PtbStats
 """
-
+import fractions
 import xml.etree.ElementTree as ET
 import os
 from PartID import *
@@ -114,6 +114,40 @@ class Part:
             return PartType11[Id]
         elif Id in PartType15:
             return PartType15[Id]
+
+
+class ArmorBoard:
+    def __init__(self, name, thickness, size, position, rotation, color, count):
+        # --------------------------------------基础信息-------------------------------------- #
+        self.Name = name
+        self.Thickness = thickness
+        self.Size = size
+        self.Rotation = rotation  # 旋转角度
+        self.RotXen = rotation[0]
+        self.RotYen = rotation[1]
+        self.RotZen = rotation[2]
+        self.Position = position  # 位置
+        self.PosXen = position[0]
+        self.PosYen = position[1]
+        self.PosZen = position[2]
+        self.Color = color  # 颜色
+        self.ColR = color[0]
+        self.ColG = color[1]
+        self.ColB = color[2]
+        self.Count = count
+        # --------------------------------------破解信息-------------------------------------- #
+        self.crack_rot = {
+            ("aItFb4DVGMA=", "EyeSI9BZ8iA=", "EyeSI9BZ8iA="): "上",
+            ("EyeSI9BZ8iA=", "vBtdNgUkMhJnDj8rAJ8W1Q==", "EyeSI9BZ8iA=") : "前",
+            ("EyeSI9BZ8iA=", "wqy+hTD7/OU=", "EyeSI9BZ8iA=") : "右",
+            ("EyeSI9BZ8iA=", "aItFb4DVGMA=", "EyeSI9BZ8iA=") : "后",
+            ("EyeSI9BZ8iA=", "DCkAZTY/6PH2Ya3NmrBXVQ==", "EyeSI9BZ8iA=") : "左",
+            ("cTYnG36Sjc0=", "EyeSI9BZ8iA=", "EyeSI9BZ8iA=") : "下",
+        }
+
+    def __str__(self):
+        return f'名称: {self.Name}    大小: {self.Size}\n' \
+               f'旋转: {self.Rotation}   坐标: {self.Position}   RGB: {self.Color}\n'
 
 
 class ReadDesign:
@@ -330,19 +364,17 @@ class ReadDesign:
         读取零件元素，初始化self.Parts
         :return: self.Parts
         """
-        parts = self.root.find('parts').findall('part')
         result = {
-            "Hull": [],
-            "Dock": [],
-            "火炮": [],
-            "鱼雷": [],
-            "防空炮": [],
+            "船体": [], "装甲": [],
+            "火炮": [], "鱼雷": [], "防空炮": [],
+            "火控": [], "测距仪": [],
+            "排烟器": [], "传动": [], "弹射器": [], "装饰": [],
         }
-        for part in parts:
+        for part in self.root.find('parts').findall('part'):
             P = Part(
                 part.attrib['Id'],
                 part.attrib['Name'],
-                part.attrib['weight'],
+                float(part.attrib['weight']) * (3/5)**3,
                 part.attrib['buoyancy'],
                 (
                     int(part.find("Rotation").attrib['RotX']),
@@ -362,16 +394,77 @@ class ReadDesign:
                     int(256 * float(part.find("Color").attrib['ColorB']))
                 )
             )
-            result.append(P)
+            if "船体" in P.ID or "薄板" in P.ID or P.ID in ("弹药库", "机库"):
+                result["船体"].append(P)
+            elif "装甲" in P.ID:
+                result["装甲"].append(P)
+            elif P.Name == "Main_Weapon":
+                result["火炮"].append(P)
+            elif P.Name == "Torpedo":
+                result["鱼雷"].append(P)
+            elif P.Name == "AA":
+                result["防空炮"].append(P)
+            elif "火控" in P.ID:
+                result["火控"].append(P)
+            elif "测距仪" in P.ID:
+                result["测距仪"].append(P)
+            elif "烟" in P.ID:
+                result["排烟器"].append(P)
+            elif "螺旋桨" in P.ID or P.ID == "舵":
+                result["传动"].append(P)
+            elif "弹射器" in P.ID:
+                result["弹射器"].append(P)
+            else:
+                result["装饰"].append(P)
         self.Parts = result
         return result
+
+    def read_armors(self):
+        """
+        读取装甲板元素，初始化self.ArmorBoards
+        :return: self.ArmorBoards
+        """
+        result = {
+            "左": [], "右": [],
+            "前": [], "后": [],
+            "上": [], "下": [],
+            "其他": []
+        }
+        for armor in self._armors.findall('armorboard'):
+            A = ArmorBoard(
+                armor.attrib['name'],
+                int(1000 * float(armor.attrib['sizeZ'])),
+                (
+                    int(armor.attrib['sizeX']),
+                    int(armor.attrib['sizeY']),
+                ), (
+                    armor.attrib['posXen'],
+                    armor.attrib['posYen'],
+                    armor.attrib['posZen']
+                ), (
+                    armor.attrib['rotXen'],
+                    armor.attrib['rotYen'],
+                    armor.attrib['rotZen']
+                ), (
+                    int(256 * float(armor.attrib['colR'])),
+                    int(256 * float(armor.attrib['colG'])),
+                    int(256 * float(armor.attrib['colB']))
+                ),
+                int(armor.attrib['count']),
+            )
+            if A.Rotation in A.crack_rot:
+                print(f"装甲板{A.Name}的放置方向：{A.crack_rot[A.Rotation]}")
+            else:
+                print(f"装甲板{A.Name}的放置无法破解")
 
 
 if __name__ == '__main__':
     OwnPath = os.path.abspath('.')
     design_path = os.path.join(OwnPath, 'Designs', 'KMS-Graf Zeppelin.xml')
+    # design_path = os.path.join(OwnPath, 'Designs', 'IJN-Shimakaze.xml')
     # design_path = os.path.join(OwnPath, 'Designs', 'test.xml')
     D1 = ReadDesign(design_path)
     D1.read_parts()
-    for p in D1.Parts:
-        print(p)
+    for cls, parts in D1.Parts.items():
+        parts_names = [part.Weight for part in parts]
+        print(cls, parts_names)
