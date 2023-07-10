@@ -1,84 +1,183 @@
 <root>
-  <ShipInfo ShipName="test" CorePosX="0" CorePosY="0" CorePosZ="0" HP="115" CP="4560" MeanPosX="-1.5" MeanPosY="1.5" MeanPosZ="1.5" TotalX="2" TotalY="2" TotalZ="2" PosY="2.5" NegY="0.5" PartAmount="8" CMX="-1.5" CMY="1.5" CMZ="1.5" weight="200" TotalBuoyancy="1000" SecurityCode="c92e92c0dde49279622da2c784a6fdd8" />
+  <ShipInfo ShipName="test" CorePosX="-11.62796" CorePosY="0.3316841" CorePosZ="-0.8915071" HP="14" CP="5680" MeanPosX="10.54167" MeanPosY="0.9583333" MeanPosZ="4.967054E-09" TotalX="23" TotalY="2" TotalZ="1" PosY="1.5" NegY="-0.5" PartAmount="24" CMX="13.68537" CMY="0.9107147" CMZ="1.064363E-08" weight="280.0016" TotalBuoyancy="279.6889" SecurityCode="c360bae604f5180018d8ec5654489971" />
   <parts>
     <part Id="1" Name="Hull" weight="25" buoyancy="125">
-      <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-1" posY="1" posZ="2" />
+      <Rotation RotX="0" RotY="90" RotZ="0" />
+      <position posX="0" posY="0" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000000" Name="AA" weight="5.035" buoyancy="0.6625">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-2" posY="1" posZ="2" />
+      <position posX="0" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000010" Name="AA" weight="5.13" buoyancy="0.675">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-2" posY="1" posZ="1" />
+      <position posX="1" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000100" Name="AA" weight="3.9775" buoyancy="0.5375">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-1" posY="1" posZ="1" />
+      <position posX="2" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000110" Name="AA" weight="3.9775" buoyancy="0.5375">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-2" posY="2" posZ="1" />
+      <position posX="3" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000130" Name="AA" weight="3.9775" buoyancy="0.5375">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-1" posY="2" posZ="1" />
+      <position posX="4" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000120" Name="AA" weight="10.01" buoyancy="1.3">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-1" posY="2" posZ="2" />
+      <position posX="5" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="1" Name="Hull" weight="25" buoyancy="125">
+    <part Id="112000200" Name="AA" weight="0.9375" buoyancy="0.125">
       <Rotation RotX="0" RotY="0" RotZ="0" />
-      <position posX="-2" posY="2" posZ="2" />
+      <position posX="6" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000210" Name="AA" weight="0.95" buoyancy="0.125">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="7" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000310" Name="AA" weight="1.05875" buoyancy="0.1375">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="8" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000400" Name="AA" weight="18.9625" buoyancy="2.5625">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="9" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000420" Name="AA" weight="19.96875" buoyancy="2.6625">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="10" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000500" Name="AA" weight="9.990001" buoyancy="1.35">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="11" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000510" Name="AA" weight="10.0825" buoyancy="1.3625">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="12" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000600" Name="AA" weight="0.9625" buoyancy="0.1375">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="13" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000700" Name="AA" weight="1.995" buoyancy="0.2625">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="14" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000800" Name="AA" weight="14.91875" buoyancy="1.9375">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="15" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112000900" Name="AA" weight="3.01125" buoyancy="0.4125">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="16" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112001000" Name="AA" weight="1.4875" buoyancy="0.2125">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="17" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112001100" Name="AA" weight="1.995" buoyancy="0.2625">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="18" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112001200" Name="AA" weight="48.61111" buoyancy="46.2963">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="19" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112001300" Name="AA" weight="48.61111" buoyancy="46.2963">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="20" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="112001400" Name="AA" weight="16.2037" buoyancy="23.14815">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="21" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
+      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
+    </part>
+    <part Id="114000200" Name="Rocket" weight="23.14815" buoyancy="23.14815">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="22" posY="1" posZ="0" />
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
   </parts>
-  <ShipType type="auto" efficiency="0.0" bridgePosX="10000" bridgePosZ="10000" checkCode="fa120e9907695f9ddca859d5ec30af7f" />
+  <ShipType type="auto" efficiency="0.0" bridgePosX="10000" bridgePosZ="10000" checkCode="d880c351ff08cd8a0ce6d668ff1b6a31" />
   <ShipCard>
     <ShipName Value="test" />
     <Designer Value="UnKown" />
-    <Displacement Value="1.6" />
-    <Volume Value="8" />
-    <Length Value="2.001953" />
-    <Width Value="2.001953" />
-    <Height Value="1.600586" />
-    <Draft Value="0.40" />
-    <HP Value="115" />
-    <Drag Value="0.00" />
-    <MassCenterX Value="NaN" />
-    <MassCenterZ Value="NaN" />
+    <Displacement Value="2.240012" />
+    <Volume Value="2.237511" />
+    <Length Value="3.494141" />
+    <Width Value="0.7558594" />
+    <Height Value="0.2529297" />
+    <Draft Value="2.00" />
+    <HP Value="14" />
+    <Drag Value="2.20" />
+    <MassCenterX Value="3.152" />
+    <MassCenterZ Value="0.000" />
     <MainWeapon Value="0" />
     <Range Value="0" />
     <MainArmor Value="10" />
     <Magazine Value="0" />
-    <NeedMagazine Value="0" />
-    <SpendMoney Value="0" />
-    <SpendTime Value="4" />
-    <AA Value="0 / 0 / 0" />
+    <NeedMagazine Value="20" />
+    <SpendMoney Value="245900" />
+    <SpendTime Value="3095.5" />
+    <AA Value="9 / 103 / 16" />
     <Plane Value="0 / 0" />
   </ShipCard>
-  <CheakCode Designer="61886" DesignTime="1688233964" Code="63a96a0165ae2d0f983db09a68703d6b" />
+  <CheakCode Designer="31099" DesignTime="1688951746" Code="2d27248b59f8611d8c4255fb2f460097" />
   <CopyWriting Text="" />
   <Collaborators />
+  <lines2 />
   <painters />
   <appliques />
+  <rebars />
+  <airfixs />
   <armorboards />
   <seaspyplanes />
   <mods />

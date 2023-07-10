@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on 2023/6/24 15:00
-Project: PTB
+Project: 工艺战舰图纸阅读器
 File: main.py
-
-    This file is the main file of PTB-BlueprintReader.
+Description:
+    This file is the main file of PTB-BlueprintReader,
+    which is a program that can read blueprint files of From the Depths.
+    本文件是工艺战舰图纸阅读器的主文件，该程序可以读取来自深渊的工艺战舰图纸文件。
 """
 import base64
 from IMGS import *
@@ -148,7 +150,6 @@ class CompareFrame:
             messagebox.showerror('错误', '请选择两个不同的设计！')
             return
         # 开始对比
-
 
 
 class ShowShipFrame:

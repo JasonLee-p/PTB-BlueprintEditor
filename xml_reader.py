@@ -1,5 +1,119 @@
+"""
+读取xml形式的图纸，提取出图纸的各项参数
+
+该文件引用了https://github.com/ZhangBohan233/PtbStats
+"""
+
 import xml.etree.ElementTree as ET
 import os
+from PartID import *
+
+WEIGHT_MULTIPLIER = 0.216  # xml的weight值与真实重量的比例
+HULL_DENSITY = 0.2  # 普通船体的密度
+
+TURBINE_DATA = {
+    "130000000": {
+        "block_size": (2, 2, 2),  # 每个轮机模块大小
+        "block_weight": 300,  # 每个轮机模块重量
+        "note": "日航烟A"
+    },
+    "130000001": {
+        "block_size": (3, 2, 2), "block_weight": 400, "note": "日航烟B"
+    },
+    "130000002": {
+        "block_size": (3, 2, 2), "block_weight": 400, "note": "德烟A"
+    },
+    "130000003": {
+        "block_size": (3, 3, 2), "block_weight": 425, "note": "德烟B"
+    },
+    "130000004": {
+        "block_size": (3, 3, 2), "block_weight": 450, "note": "德烟C"
+    },
+    "130000005": {
+        "block_size": (3, 3, 2), "block_weight": 350, "note": "英烟A"
+    },
+    "130000006": {
+        "block_size": (2, 2, 1), "block_weight": 150, "note": "驱逐烟"
+    },
+    "130000007": {
+        "block_size": (3.5, 3.5, 2), "block_weight": 300, "note": "鸭滑烟1"
+    },
+    "130000008": {
+        "block_size": (3.5, 3.5, 2), "block_weight": 300, "note": "鸭滑烟2"
+    },
+    "130000010": {
+        "block_size": (3, 3.5, 2), "block_weight": 320, "note": "得梅因烟"
+    }
+}
+
+
+class Part:
+    def __init__(self, Id, name, weight, buoyancy, rotation, position, scale, color):
+        # --------------------------------------基础信息-------------------------------------- #
+        if self.id2name(Id):
+            self.ID = self.id2name(Id)
+        else:
+            raise RuntimeWarning(f'未知的零件ID: {Id}')
+        self.Name = name
+        self.Weight = weight
+        self.Buoyancy = buoyancy
+        self.Rotation = rotation  # 旋转角度
+        self.RotX = rotation[0]
+        self.RotY = rotation[1]
+        self.RotZ = rotation[2]
+        self.Position = position  # 位置
+        self.PosX = position[0]
+        self.PosY = position[1]
+        self.PosZ = position[2]
+        self.Scale = scale  # 碰撞箱
+        self.ScaX = scale[0]
+        self.ScaY = scale[1]
+        self.ScaZ = scale[2]
+        self.Color = color  # 颜色
+        self.ColR = color[0]
+        self.ColG = color[1]
+        self.ColB = color[2]
+        # --------------------------------------计算信息-------------------------------------- #
+
+    def __str__(self):
+        return f'名称: {self.ID}    类别: {self.Name}\n重量: {self.Weight}      浮力: {self.Buoyancy}\n' \
+               f'旋转: {self.Rotation}   坐标: {self.Position}   大小: {self.Scale}   RGB: {self.Color}\n'
+
+    @staticmethod
+    def id2name(Id):
+        if Id in PartType1:
+            return PartType1[Id]
+        elif Id in PartTypeSpecial:
+            return PartTypeSpecial[Id]
+        elif Id in PartType10:
+            return PartType10[Id]
+        elif Id in PartType12:
+            return PartType12[Id]
+        elif Id in PartType13:
+            return PartType13[Id]
+        elif Id in PartType14:
+            return PartType14[Id]
+        elif Id[0] in ['2', '3', '4', '5']:  # 船体
+            result = f'船体{int(Id[2:4])}*{int(Id[4:6])}*{int(Id[6:8])}'
+            _rel0 = {'2': '1/2', '3': '1/3', '4': '1/6', '5': '5/6'}
+            _rel1 = {'0': '右', '1': '左', '2': '斜右', '3': '斜左'}
+            return _rel0[Id[0]] + result + _rel1[Id[1]]
+        elif Id[0] == '6':  # 甲板
+            result = f'甲板{int(Id[2:4])}*1*{int(Id[6:8])}'
+            _rel = {'0': '柚', '1': '蓝', '2': '毡', '3': '空'}
+            return result + _rel[Id[1]]
+        elif Id[0] == '7':
+            result = f'1/2甲板{int(Id[2:4])}*1*{int(Id[6:8])}'
+            _rel = {'0': '柚右', '1': '柚左', '2': '蓝右', '3': '蓝左', '4': '毡右', '5': '毡左', '6': '空右', '7': '空左'}
+            return result + _rel[Id[1]]
+        elif Id[0] == '9':
+            result = f'{int(Id[-3]) * 50}mm装甲舱'
+            _rel = {'1': '1*1*1', '2': '1/2', '3': '1/3', '4': '1/6', '5': '5/6', '6': '3*1*2', '7': '2*2*2'}
+            return result + _rel[Id[1]]
+        elif Id in PartType11:
+            return PartType11[Id]
+        elif Id in PartType15:
+            return PartType15[Id]
 
 
 class ReadDesign:
@@ -11,8 +125,11 @@ class ReadDesign:
         # ShipInfo
         self.ShipInfo = self.root.find('ShipInfo')
         self.ShipName = self.ShipInfo.attrib['ShipName']
+        self.AllParts = []
         self.Introduction = self.root.find('CopyWriting').attrib['Text']
         self.HP = int(self.ShipInfo.attrib['HP'])
+        #
+        self.Parts = None
         try:
             self.CP = int(self.ShipInfo.attrib['CP'])
         except ValueError:
@@ -73,7 +190,13 @@ class ReadDesign:
         self.AA = self.ShipCard.find('AA').attrib['Value']
         self.Aircraft = self.ShipCard.find('Plane').attrib['Value']
         self.SpendTime = float(self.ShipCard.find('SpendTime').attrib['Value'])
-        self.Price = int(self.ShipCard.find('SpendMoney').attrib['Value'])
+        try:
+            self.Price = int(self.ShipCard.find('SpendMoney').attrib['Value'])
+        except ValueError:
+            # 把科学计数法转换为整数
+            _sp = self.ShipCard.find('SpendMoney').attrib['Value'].split('E')
+            self.Price = int(float(_sp[0]) * 10 ** int(_sp[1]))
+
         # ________________________________________________________________________________钢筋
         self._rebars = self.root.find('rebars')
         self.Rebars = {
@@ -202,8 +325,53 @@ class ReadDesign:
         print(f"方形系数：{self.SquareCoefficient}")
         print(f"阻力系数：{self.Drag}")
 
+    def read_parts(self):
+        """
+        读取零件元素，初始化self.Parts
+        :return: self.Parts
+        """
+        parts = self.root.find('parts').findall('part')
+        result = {
+            "Hull": [],
+            "Dock": [],
+            "火炮": [],
+            "鱼雷": [],
+            "防空炮": [],
+        }
+        for part in parts:
+            P = Part(
+                part.attrib['Id'],
+                part.attrib['Name'],
+                part.attrib['weight'],
+                part.attrib['buoyancy'],
+                (
+                    int(part.find("Rotation").attrib['RotX']),
+                    int(part.find("Rotation").attrib['RotY']),
+                    int(part.find("Rotation").attrib['RotZ'])
+                ), (
+                    round(float(part.find("position").attrib['posX']), 1),
+                    round(float(part.find("position").attrib['posY']), 1),
+                    round(float(part.find("position").attrib['posZ']), 1)
+                ), (
+                    float(part.find("scale").attrib['ScaX']),
+                    float(part.find("scale").attrib['ScaY']),
+                    float(part.find("scale").attrib['ScaZ'])
+                ), (
+                    int(256 * float(part.find("Color").attrib['ColorR'])),
+                    int(256 * float(part.find("Color").attrib['ColorG'])),
+                    int(256 * float(part.find("Color").attrib['ColorB']))
+                )
+            )
+            result.append(P)
+        self.Parts = result
+        return result
+
 
 if __name__ == '__main__':
     OwnPath = os.path.abspath('.')
-    design_path = os.path.join(OwnPath, 'Designs', 'KMS-Z36.xml')
+    design_path = os.path.join(OwnPath, 'Designs', 'KMS-Graf Zeppelin.xml')
+    # design_path = os.path.join(OwnPath, 'Designs', 'test.xml')
     D1 = ReadDesign(design_path)
+    D1.read_parts()
+    for p in D1.Parts:
+        print(p)
