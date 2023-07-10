@@ -3,7 +3,6 @@
 
 该文件引用了https://github.com/ZhangBohan233/PtbStats
 """
-import fractions
 import xml.etree.ElementTree as ET
 import os
 from PartID import *
