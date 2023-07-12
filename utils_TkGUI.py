@@ -9,16 +9,97 @@ import time
 import tkinter as tk
 from tkinter import messagebox, filedialog
 from tkinter import ttk
-import os
+
+"""
+tkinter 支持字体：
+(
+    'System', '@System', 'Terminal', '@Terminal', 'Fixedsys', '@Fixedsys', 'Modern', 'Roman', 'Script',
+    'Courier', 'MS Serif', 'MS Sans Serif', 'Small Fonts', 'Adobe Caslon Pro Bold', 'Adobe Caslon Pro',
+    'Adobe 仿宋 Std R', '@Adobe 仿宋 Std R', 'Adobe 繁黑體 Std B', '@Adobe 繁黑體 Std B', 'Adobe Gothic Std B',
+    '@Adobe Gothic Std B', 'Adobe 黑体 Std R', '@Adobe 黑体 Std R', 'Adobe 楷体 Std R', '@Adobe 楷体 Std R',
+    'Adobe Naskh Medium', 'Adobe Garamond Pro Bold', 'Adobe Garamond Pro', 'Birch Std', 'Blackoak Std',
+    'Brush Script Std', 'Chaparral Pro', 'Chaparral Pro Light', 'Charlemagne Std', 'Hobo Std',
+    'Kozuka Gothic Pro B', '@Kozuka Gothic Pro B', 'Kozuka Gothic Pro EL', '@Kozuka Gothic Pro EL',
+    'Kozuka Gothic Pro H', '@Kozuka Gothic Pro H', 'Kozuka Gothic Pro L', '@Kozuka Gothic Pro L',
+    'Kozuka Gothic Pro M', '@Kozuka Gothic Pro M', 'Kozuka Gothic Pro R', '@Kozuka Gothic Pro R',
+    'Kozuka Mincho Pro B', '@Kozuka Mincho Pro B', 'Kozuka Mincho Pro EL', '@Kozuka Mincho Pro EL',
+    'Kozuka Mincho Pro H', '@Kozuka Mincho Pro H', 'Kozuka Mincho Pro L', '@Kozuka Mincho Pro L',
+    'Kozuka Mincho Pro M', '@Kozuka Mincho Pro M', 'Kozuka Mincho Pro R', '@Kozuka Mincho Pro R',
+    'Lithos Pro Regular', 'Minion Pro Cond', 'Minion Pro Med', 'Minion Pro SmBd', 'Myriad Arabic',
+    'Nueva Std', 'Nueva Std Cond', 'OCR A Std', 'Orator Std', 'Poplar Std', 'Prestige Elite Std',
+    'Source Sans Pro Black', 'Source Sans Pro', 'Source Sans Pro ExtraLight', 'Source Sans Pro Light',
+    'Source Sans Pro Semibold', 'Tekton Pro', 'Tekton Pro Cond', 'Tekton Pro Ext', 'Trajan Pro 3',
+    'Adobe Arabic', 'Adobe Devanagari', 'Adobe Gurmukhi', 'Adobe Hebrew', 'Adobe 明體 Std L', '@Adobe 明體 Std L',
+    'Adobe Myungjo Std M', '@Adobe Myungjo Std M', 'Adobe 宋体 Std L', '@Adobe 宋体 Std L', 'Kozuka Gothic Pr6N B',
+    '@Kozuka Gothic Pr6N B', 'Kozuka Gothic Pr6N EL', '@Kozuka Gothic Pr6N EL', 'Kozuka Gothic Pr6N H',
+    '@Kozuka Gothic Pr6N H', 'Kozuka Gothic Pr6N L', '@Kozuka Gothic Pr6N L', 'Kozuka Gothic Pr6N M',
+    '@Kozuka Gothic Pr6N M', 'Kozuka Gothic Pr6N R', '@Kozuka Gothic Pr6N R', 'Kozuka Mincho Pr6N B',
+    '@Kozuka Mincho Pr6N B', 'Kozuka Mincho Pr6N EL', '@Kozuka Mincho Pr6N EL', 'Kozuka Mincho Pr6N H',
+    '@Kozuka Mincho Pr6N H', 'Kozuka Mincho Pr6N L', '@Kozuka Mincho Pr6N L', 'Kozuka Mincho Pr6N M',
+    '@Kozuka Mincho Pr6N M', 'Kozuka Mincho Pr6N R', '@Kozuka Mincho Pr6N R', 'Letter Gothic Std',
+    'Minion Pro', 'Myriad Hebrew', 'Myriad Pro', 'Myriad Pro Cond', 'Myriad Pro Light', 'Opus Note Names Std',
+    'Inkpen2 Std', 'Opus Chords Sans Std', 'Reprise Big Time Std', 'Helsinki Metronome Std', 'Helsinki Std',
+    'Opus Metronome Std', 'Inkpen2 Chords Std', 'Opus Chords Std', 'Opus Big Time Std', 'Inkpen2 Metronome Std',
+    'Inkpen2 Text Std', 'Reprise Rehearsal Std', 'Opus Std', 'Opus Special Std', 'Reprise Script Std',
+    'Opus Percussion Std', 'Opus Special Extra Std', 'Reprise Title Std', 'Inkpen2 Script Std',
+    'Reprise Special Std', 'Opus Figured Bass Extras Std', 'Opus Ornaments Std', 'Helsinki Special Std',
+    'Opus Function Symbols Std', 'Opus Chords Sans Condensed Std', 'Reprise Stamp Std', 'Reprise Std',
+    'Reprise Metronome Std', 'Opus Text Std', 'Opus PlainChords Std', 'Helsinki Text Std', 'Reprise Text Std',
+    'Reprise Chords Std', 'Opus Roman Chords Std', 'Opus Figured Bass Std', 'Inkpen2 Special Std', 'Marlett',
+    'Arial', 'Arabic Transparent', 'Arial Baltic', 'Arial CE', 'Arial CYR', 'Arial Greek', 'Arial TUR',
+    'Arial Black', 'Bahnschrift Light', 'Bahnschrift SemiLight', 'Bahnschrift', 'Bahnschrift SemiBold',
+    'Bahnschrift Light SemiCondensed', 'Bahnschrift SemiLight SemiConde', 'Bahnschrift SemiCondensed',
+    'Bahnschrift SemiBold SemiConden', 'Bahnschrift Light Condensed', 'Bahnschrift SemiLight Condensed',
+    'Bahnschrift Condensed', 'Bahnschrift SemiBold Condensed', 'Calibri', 'Calibri Light', 'Cambria',
+    'Cambria Math', 'Candara', 'Candara Light', 'Comic Sans MS', 'Consolas', 'Constantia', 'Corbel',
+    'Corbel Light', 'Courier New', 'Courier New Baltic', 'Courier New CE', 'Courier New CYR',
+    'Courier New Greek', 'Courier New TUR', 'Ebrima', 'Franklin Gothic Medium', 'Gabriola', 'Gadugi',
+    'Georgia', 'Impact', 'Ink Free', 'Javanese Text', 'Leelawadee UI', 'Leelawadee UI Semilight',
+    'Lucida Console', 'Lucida Sans Unicode', 'Malgun Gothic', '@Malgun Gothic', 'Malgun Gothic Semilight',
+    '@Malgun Gothic Semilight', 'Microsoft Himalaya', 'Microsoft JhengHei', '@Microsoft JhengHei',
+    'Microsoft JhengHei UI', '@Microsoft JhengHei UI', 'Microsoft JhengHei Light', '@Microsoft JhengHei Light',
+    'Microsoft JhengHei UI Light', '@Microsoft JhengHei UI Light', 'Microsoft New Tai Lue', 'Microsoft PhagsPa',
+    'Microsoft Sans Serif', 'Microsoft Tai Le', '微软雅黑', '@微软雅黑', 'Microsoft YaHei UI', '@Microsoft YaHei UI',
+    '微软雅黑 Light', '@微软雅黑 Light', 'Microsoft YaHei UI Light', '@Microsoft YaHei UI Light',
+    'Microsoft Yi Baiti', 'MingLiU-ExtB', '@MingLiU-ExtB', 'PMingLiU-ExtB', '@PMingLiU-ExtB',
+    'MingLiU_HKSCS-ExtB', '@MingLiU_HKSCS-ExtB', 'Mongolian Baiti', 'MS Gothic', '@MS Gothic', 'MS UI Gothic',
+    '@MS UI Gothic', 'MS PGothic', '@MS PGothic', 'MV Boli', 'Myanmar Text', 'Nirmala UI',
+    'Nirmala UI Semilight', 'Palatino Linotype', 'Segoe Fluent Icons', 'Segoe MDL2 Assets', 'Segoe Print',
+    'Segoe Script', 'Segoe UI', 'Segoe UI Black', 'Segoe UI Emoji', 'Segoe UI Historic', 'Segoe UI Light',
+    'Segoe UI Semibold', 'Segoe UI Semilight', 'Segoe UI Symbol', 'Segoe UI Variable Small Light',
+    'Segoe UI Variable Small Semilig', 'Segoe UI Variable Small', 'Segoe UI Variable Small Semibol',
+    'Segoe UI Variable Text Light', 'Segoe UI Variable Text Semiligh', 'Segoe UI Variable Text',
+    'Segoe UI Variable Text Semibold', 'Segoe UI Variable Display Light', 'Segoe UI Variable Display Semil',
+    'Segoe UI Variable Display', 'Segoe UI Variable Display Semib', '宋体', '@宋体', '新宋体', '@新宋体',
+    'SimSun-ExtB', '@SimSun-ExtB', 'Sitka Small', 'Sitka Small Semibold', 'Sitka Text', 'Sitka Text Semibold',
+    'Sitka Subheading', 'Sitka Subheading Semibold', 'Sitka Heading', 'Sitka Heading Semibold', 'Sitka Display',
+    'Sitka Display Semibold', 'Sitka Banner', 'Sitka Banner Semibold', 'Sylfaen', 'Symbol', 'Tahoma',
+    'Times New Roman', 'Times New Roman Baltic', 'Times New Roman CE', 'Times New Roman CYR',
+    'Times New Roman Greek', 'Times New Roman TUR', 'Trebuchet MS', 'Verdana', 'Webdings', 'Wingdings',
+    'Yu Gothic', '@Yu Gothic', 'Yu Gothic UI', '@Yu Gothic UI', 'Yu Gothic UI Semibold',
+    '@Yu Gothic UI Semibold', 'Yu Gothic Light', '@Yu Gothic Light', 'Yu Gothic UI Light',
+    '@Yu Gothic UI Light', 'Yu Gothic Medium', '@Yu Gothic Medium', 'Yu Gothic UI Semilight',
+    '@Yu Gothic UI Semilight', '等线', '@等线', '等线 Light', '@等线 Light', '仿宋', '@仿宋', '楷体',
+    '@楷体', '黑体', '@黑体', 'HoloLens MDL2 Assets', 'Book Antiqua', 'Arial Narrow', 'Bookman Old Style',
+    'Bookshelf Symbol 7', 'Century', 'Dubai', 'Dubai Light', 'Dubai Medium', '方正舒体', '@方正舒体', '方正姚体',
+    '@方正姚体', 'Garamond', 'Century Gothic', 'Monotype Corsiva', 'MS Reference Sans Serif',
+    'MS Reference Specialty', '隶书', '@隶书', '幼圆', '@幼圆', '华文彩云', '@华文彩云', '华文仿宋', '@华文仿宋',
+    '华文琥珀', '@华文琥珀', '华文楷体', '@华文楷体', '华文隶书', '@华文隶书', '华文宋体', '@华文宋体', '华文细黑',
+    '@华文细黑', '华文行楷', '@华文行楷', '华文新魏', '@华文新魏', '华文中宋', '@华文中宋', 'Wingdings 2', 'Wingdings 3',
+    '方正粗黑宋简体', '@方正粗黑宋简体', 'NumberOnly', 'DejaVu Math TeX Gyre', 'MT Extra', 'Cascadia Code ExtraLight',
+    'Cascadia Code Light', 'Cascadia Code SemiLight', 'Cascadia Code', 'Cascadia Code SemiBold',
+    'Cascadia Mono ExtraLight', 'Cascadia Mono Light', 'Cascadia Mono SemiLight', 'Cascadia Mono',
+    'Cascadia Mono SemiBold'
+)
+"""
 
 BG_COLOUR = 'Beige'  # 背景色
 BG_COLOUR2 = 'ivory'  # 背景色
 FG_COLOUR = 'black'  # 前景色
 FONT0 = 'microsoft yahei'
-FONT1 = 'microsoft yahei'
+FONT1 = '幼圆'
 FONT_SIZE = 12
 FONT_SIZE2 = 10
-own_path = os.path.dirname(__file__)
 
 
 def set_window(window, title: str, transparent=True):
@@ -67,7 +148,7 @@ def title(text, bg_colour):
             master,
             text=text,
             bg=bg_colour,  # 标签背景颜色
-            font=(FONT0, font_size),  # 字体和字体大小
+            font=(FONT1, font_size),  # 字体和字体大小
             width=wid, height=hei)  # 标签长宽
         _title_v.pack(side=position, fill=fill, padx=padx, pady=pady, expand=expand, ipadx=ipadx, ipady=ipady)  # 固定窗口位置
         if belonging:
@@ -403,6 +484,58 @@ class CPGCanvas:
         pass
 
 
+class EntryBox3parts:
+    """
+    可以记录历史输入的输入框，有文字和按钮，用于输入字符串
+    """
+
+    def __init__(self, master, position, text2, width3, bt_command, font, memory_max_len):
+        """
+        :param master:
+        :param position:
+        :param text2: text's text and button text
+        :param width3: text's width, entry's width, button's width
+        :param bt_command:
+        :param font: font-size and font family
+        :param memory_max_len:
+        """
+        self.basic = tk.Frame(master, bg=BG_COLOUR)
+        self.basic.pack(side=position, expand=0)
+        self.text = tk.Label(self.basic, text=text2[0], font=font, width=width3[0], bg=BG_COLOUR)
+        self.text.pack(side="left", expand=0, padx=5)
+        self.box = ttk.Entry(self.basic, justify="center", font=font, width=width3[1])
+        self.box.pack(side="left", expand=0, padx=5)
+        _style = ttk.Style()
+        _style.configure("TButton", font=font)
+
+        self.button = ttk.Button(self.basic, text=text2[1], width=width3[2], command=bt_command)
+        self.button.pack(side="right", expand=0, padx=5)
+        self.box.insert(0, '')
+        # 当输入框正在输入时，在下方显示输入记录，并且可以通过鼠标点击记录来输入
+        self.box.bind('<KeyRelease>', self.onKeyRelease)
+        self.memory_menu = tk.Menu(self.box, tearoff=0)
+        self.memory = []
+        self.memory_max_len = memory_max_len
+
+    def onKeyRelease(self, event=None):
+        """
+        当输入框正在输入时，在下方显示输入记录，并且可以通过鼠标点击记录来输入
+        """
+        if self.box.get() == '':
+            self.memory_menu.post(0, 0)
+
+    def save_to_memory(self):
+        self.memory.append(self.box.get())
+        # 重新映射命令：
+        self.memory_menu.delete(0, 'end')
+        index = self.memory.index(self.box.get())  # 获取索引
+        if index >= self.memory_max_len:
+            self.memory = self.memory[index - self.memory_max_len + 1:]
+        # 重新映射命令：
+        for i in range(len(self.memory)):
+            self.memory_menu.add_command(label=self.box.get(), command=lambda: self.box.insert(0, self.memory[i]))
+
+
 class EntryBoxMouseWheel:
     """
     可以鼠标滚动控制值的输入框，用于输入整数
@@ -522,11 +655,10 @@ class ComboBoxMouseWheel2:
 def text_with_combox(master, text, font, text_w, combox_w, combox_list, add_wu=True):
     combox_list = ["无"] + list(combox_list) if add_wu else list(combox_list)
     title(text, BG_COLOUR)(None, master, 'left', font[1], False, text_w, hei=1, padx=0, pady=0)
-    # c = ComboBoxMouseWheel2(
-    #     master, None, 'left', font, combox_w, combox_list[0], combox_list[1:], None)
-    c = ttk.Combobox(master, justify="center", font=font, width=combox_w, values=combox_list)
+    c = ttk.Combobox(master, justify="center", font=(FONT0, font[1]), width=combox_w, values=combox_list)
     # 设置默认值
-    c.current(0)
+    if combox_list:
+        c.current(0)
     c.pack(side='left', expand=False, padx=5, pady=5)
     return c
 
@@ -733,7 +865,7 @@ class CodeEditor(TextEntryWithMenu):
     def __init__(self, frame, redirect=True):
         super().__init__(frame)
         self.redirect = redirect
-        self.default_code =\
+        self.default_code = \
             "# -*- coding: utf-8 -*-\n" \
             "print('Hello World!')"
         # 中间：运行按钮
@@ -812,5 +944,38 @@ class CodeEditor(TextEntryWithMenu):
         self.line_label.place(x=x, y=y)
 
 
-if __name__ == "__main__":
-    ...
+class MyMenu:
+    def __init__(self, basic, menu_labels_funcs):
+        # 添加右键菜单
+        self.basic = basic
+        self.menu = tk.Menu(basic, tearoff=0)
+        for label in menu_labels_funcs:
+            self.menu.add_command(label=label, command=menu_labels_funcs[label])
+        basic.bind('<Button-3>', self.popup)
+
+    def popup(self, event):
+        self.menu.post(event.x_root, event.y_root)
+
+
+class TempTransparentWin:
+    def __init__(self, text_color):
+        self.root = tk.Toplevel(highlightcolor='gray')
+        self.root.attributes("-transparentcolor", "gray")
+        self.root.attributes("-alpha", 0.01)
+        self.root.config(bg='gray')
+        # 设置窗口最大化
+        self.root.state('zoomed')
+        self.root.wm_attributes("-topmost", True)
+        self.root.overrideredirect(True)  # 设置窗口隐藏边框
+        tk.Label(self.root, text='...正在读取图纸...', font=(FONT1, 40), bg='gray', fg=text_color
+                 ).pack(expand=True, fill='both', side='top')
+        for i in range(1, 17):
+            self.root.attributes("-alpha", i / 20)
+            self.root.update()
+            time.sleep(0.005)
+
+    def destroy(self):
+        self.root.destroy()
+
+# if __name__ == "__main__":
+#     ...

@@ -1,5 +1,5 @@
 <root>
-  <ShipInfo ShipName="test" CorePosX="-18.4945" CorePosY="-1.79793" CorePosZ="0.4116864" HP="233" CP="6730" MeanPosX="0" MeanPosY="0" MeanPosZ="-9.73137E-09" TotalX="3" TotalY="6" TotalZ="3" PosY="3" NegY="-3" PartAmount="39" CMX="0" CMY="0" CMZ="-7.744133E-09" weight="492.5919" TotalBuoyancy="2114.168" SecurityCode="d9f7b6778f0008a4c903a94cd166f716" />
+  <ShipInfo ShipName="test" CorePosX="-18.4945" CorePosY="-1.79793" CorePosZ="0.4116864" HP="14" CP="4210" MeanPosX="0" MeanPosY="2.214286" MeanPosZ="0" TotalX="3" TotalY="4" TotalZ="2" PosY="3.5" NegY="-0.5" PartAmount="3" CMX="0" CMY="2.3" CMZ="0" weight="500" TotalBuoyancy="1750" SecurityCode="129ae761fb02cf23d211b213f71da620" />
   <parts>
     <part Id="1" Name="Hull" weight="25" buoyancy="125">
       <Rotation RotX="0" RotY="90" RotZ="0" />
@@ -7,128 +7,44 @@
       <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="90" RotZ="90" />
-      <position posX="0" posY="-1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
+    <part Id="101000000" Name="magazine" weight="25" buoyancy="125">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="0" posY="1" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="270" RotZ="90" />
-      <position posX="0" posY="-1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="0" RotZ="90" />
-      <position posX="-1" posY="-1.5" posZ="0" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="180" RotZ="90" />
-      <position posX="1" posY="-1.5" posZ="0" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="0" RotZ="270" />
-      <position posX="1" posY="1.5" posZ="0" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="180" RotZ="270" />
-      <position posX="-1" posY="1.5" posZ="0" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="270" RotZ="270" />
-      <position posX="0" posY="1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="20030101" Name="Hull" weight="37.5" buoyancy="187.5">
-      <Rotation RotX="0" RotY="90" RotZ="270" />
-      <position posX="0" posY="1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="180" RotZ="90" />
-      <position posX="1" posY="-1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="90" RotZ="90" />
-      <position posX="1" posY="-1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="270" RotZ="90" />
-      <position posX="-1" posY="-1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="0" RotZ="90" />
-      <position posX="-1" posY="-1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="180" RotZ="270" />
-      <position posX="-1" posY="1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="270" RotZ="270" />
-      <position posX="-1" posY="1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="0" RotZ="270" />
-      <position posX="1" posY="1.5" posZ="1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
-      <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
-    </part>
-    <part Id="40030101" Name="Hull" weight="12" buoyancy="60">
-      <Rotation RotX="0" RotY="90" RotZ="270" />
-      <position posX="1" posY="1.5" posZ="-1" />
-      <scale ScaX="3" ScaY="1" ScaZ="1" />
+    <part Id="102000000" Name="magazine" weight="450" buoyancy="1500">
+      <Rotation RotX="0" RotY="0" RotZ="0" />
+      <position posX="0" posY="2.5" posZ="0" />
+      <scale ScaX="1" ScaY="1" ScaZ="1" />
       <Color ColorR="0.5019608" ColorG="0.5019608" ColorB="0.5019608" />
     </part>
   </parts>
-  <ShipType type="auto" efficiency="0.0" bridgePosX="10000" bridgePosZ="10000" checkCode="2823862e4fb59186b4a8a018b8d86ffd" />
+  <ShipType type="auto" efficiency="0.0" bridgePosX="10000" bridgePosZ="10000" checkCode="3f775ecc551af5b840ed977080153b17" />
   <ShipCard>
     <ShipName Value="test" />
     <Designer Value="咕咕的元首" />
-    <Displacement Value="3.940734" />
-    <Volume Value="16.91334" />
-    <Length Value="2.064453" />
-    <Width Value="2.064453" />
-    <Height Value="4.504883" />
-    <Draft Value="1.49" />
-    <HP Value="233" />
-    <Drag Value="11.59" />
-    <MassCenterX Value="NaN" />
-    <MassCenterZ Value="NaN" />
+    <Displacement Value="4" />
+    <Volume Value="14" />
+    <Length Value="3.001953" />
+    <Width Value="2.001953" />
+    <Height Value="1.651367" />
+    <Draft Value="2.35" />
+    <HP Value="14" />
+    <Drag Value="6.25" />
+    <MassCenterX Value="0.000" />
+    <MassCenterZ Value="0.000" />
     <MainWeapon Value="0" />
     <Range Value="0" />
     <MainArmor Value="10" />
     <Magazine Value="0" />
     <NeedMagazine Value="0" />
-    <SpendMoney Value="220" />
-    <SpendTime Value="26.70001" />
+    <SpendMoney Value="51000" />
+    <SpendTime Value="330.5" />
     <AA Value="0 / 0 / 0" />
-    <Plane Value="0 / 0" />
+    <Plane Value="0 / 1" />
   </ShipCard>
-  <CheakCode Designer="31099" DesignTime="1688955732" Code="393e7fc773b0449e1e55342de77278cb" />
+  <CheakCode Designer="31099" DesignTime="1689025481" Code="e31abe7554871cb25c60ce99a87b8a84" />
   <CopyWriting Text="" />
   <Collaborators />
   <lines2 />
@@ -136,30 +52,7 @@
   <appliques />
   <rebars />
   <airfixs />
-  <armorboards>
-    <armorboard name="上" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="ygfguCtp3Yk=" posZen="EyeSI9BZ8iA=" rotXen="aItFb4DVGMA=" rotYen="EyeSI9BZ8iA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="前" sizeX="3" sizeY="3" sizeZ="0.01" posXen="ygfguCtp3Yk=" posYen="EyeSI9BZ8iA=" posZen="EyeSI9BZ8iA=" rotXen="EyeSI9BZ8iA=" rotYen="vBtdNgUkMhJnDj8rAJ8W1Q==" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="EyeSI9BZ8iA=" posZen="sKFNfGeDHdA=" rotXen="EyeSI9BZ8iA=" rotYen="wqy+hTD7/OU=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="后" sizeX="3" sizeY="3" sizeZ="0.01" posXen="sKFNfGeDHdA=" posYen="EyeSI9BZ8iA=" posZen="EyeSI9BZ8iA=" rotXen="EyeSI9BZ8iA=" rotYen="aItFb4DVGMA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="EyeSI9BZ8iA=" posZen="ygfguCtp3Yk=" rotXen="EyeSI9BZ8iA=" rotYen="DCkAZTY/6PH2Ya3NmrBXVQ==" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="下" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="sKFNfGeDHdA=" posZen="EyeSI9BZ8iA=" rotXen="cTYnG36Sjc0=" rotYen="EyeSI9BZ8iA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="前上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="Hf74OlL138c=" posZen="EyeSI9BZ8iA=" rotXen="CqbGGOLYq+OGYjRZeF+G2Q==" rotYen="cTYnG36Sjc0=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="前下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="8ff3rAPHkFc=" posZen="EyeSI9BZ8iA=" rotXen="LCO3xx//qfBBL2tsW26A9Q==" rotYen="cTYnG36Sjc0=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="后上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="Hf74OlL138c=" posZen="EyeSI9BZ8iA=" rotXen="CqbGGOLYq+OGYjRZeF+G2Q==" rotYen="aItFb4DVGMA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="后下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="8ff3rAPHkFc=" posZen="EyeSI9BZ8iA=" rotXen="LCO3xx//qfBBL2tsW26A9Q==" rotYen="aItFb4DVGMA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="8ff3rAPHkFc=" posZen="hB8LaMfk3LI=" rotXen="LCO3xx//qfBBL2tsW26A9Q==" rotYen="wqy+hTD7/OU=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="Hf74OlL138c=" posZen="hB8LaMfk3LI=" rotXen="CqbGGOLYq+OGYjRZeF+G2Q==" rotYen="wqy+hTD7/OU=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="8ff3rAPHkFc=" posZen="J41y98jiNRk=" rotXen="LCO3xx//qfBBL2tsW26A9Q==" rotYen="EyeSI9BZ8iA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="EyeSI9BZ8iA=" posYen="Hf74OlL138c=" posZen="J41y98jiNRk=" rotXen="CqbGGOLYq+OGYjRZeF+G2Q==" rotYen="EyeSI9BZ8iA=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左前上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="Hf74OlL138c=" posZen="ygfguCtp3Yk=" rotXen="fdrJfYi8i3Z7ZaEEEUoIjA==" rotYen="5ZFe72UsAow=" rotZen="7eqkCz/Pqty7/SLbz6vbPA==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右前上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="Hf74OlL138c=" posZen="sKFNfGeDHdA=" rotXen="fdrJfYi8i3Z7ZaEEEUoIjA==" rotYen="87Vz/KjHTbM=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右前下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="8ff3rAPHkFc=" posZen="sKFNfGeDHdA=" rotXen="3CI/ukKdvXMgiTbiR5BIXA==" rotYen="87Vz/KjHTbM=" rotZen="7eqkCz/Pqtwe3lYmPx4pYQ==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左前下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="J41y98jiNRk=" posYen="8ff3rAPHkFc=" posZen="ygfguCtp3Yk=" rotXen="3CI/ukKdvXMgiTbiR5BIXA==" rotYen="5ZFe72UsAow=" rotZen="vNImyd+GRq6Tpv5/xue2OA==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左后下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="8ff3rAPHkFc=" posZen="ygfguCtp3Yk=" rotXen="3CI/ukKdvXMgiTbiR5BIXA==" rotYen="996xxxJLQiM=" rotZen="7eqkCz/Pqty7/SLbz6vbPA==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右后下3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="8ff3rAPHkFc=" posZen="sKFNfGeDHdA=" rotXen="3CI/ukKdvXMgiTbiR5BIXA==" rotYen="eifDS3iomOg=" rotZen="EyeSI9BZ8iA=" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="右后上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="Hf74OlL138c=" posZen="sKFNfGeDHdA=" rotXen="fdrJfYi8i3Z7ZaEEEUoIjA==" rotYen="eifDS3iomOg=" rotZen="7eqkCz/Pqtwe3lYmPx4pYQ==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-    <armorboard name="左后上3" sizeX="3" sizeY="3" sizeZ="0.01" posXen="hB8LaMfk3LI=" posYen="Hf74OlL138c=" posZen="ygfguCtp3Yk=" rotXen="fdrJfYi8i3Z7ZaEEEUoIjA==" rotYen="996xxxJLQiM=" rotZen="vNImyd+GRq6Tpv5/xue2OA==" colR="0.5" colG="0.5" colB="0.5" count="1" time="0" cost="10" />
-  </armorboards>
+  <armorboards />
   <seaspyplanes />
   <mods />
 </root>

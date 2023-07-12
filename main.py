@@ -9,80 +9,119 @@ Description:
     本文件是工艺战舰图纸阅读器的主文件，该程序可以读取来自深渊的工艺战舰图纸文件。
 """
 import base64
+import os
+# 项目文件
 from IMGS import *
-from TkGUI import *
-from xml_reader import *
+from utils_TkGUI import *
+from xml_reader import ReadDesign
+from utils_plot import *
+
+LOCAL_ADDRESS = os.getcwd()
 
 
 class MainHandler:
     def __init__(self):
         self.tree1 = GUI.Left.tree
         self.combox = GUI.Left.combox
-        self.combox.bind('<<ComboboxSelected>>', self.combox_update)
         self.combox.bind('<Return>', self.combox_update)
-        self.combox.bind('<Leave>', self.combox_update)
-        self.combox.bind('<FocusOut>', self.combox_update)
+        self.combox.bind('<Button-1>', self.combox_update)
         self.combox.bind('<MouseWheel>', self.combox_update)
         self.last_design = None
         self.DesignReader = None
+        self.ReadingDesign = False
 
-    def combox_update(self, event):
+    def combox_update(self, event=None):
         """
         更新所有信息
         :return:
         """
         if self.last_design == self.combox.get():
             return
+        if self.ReadingDesign:
+            return
+        self.ReadingDesign = True
         file_name = self.combox.get() + '.xml'
         # 在同目录下寻找有Design字样的文件夹:
-        for root, dirs, files in os.walk(os.path.abspath('.')):
+        for root, dirs, files in os.walk(LOCAL_ADDRESS):
             for _dir in dirs:
                 if 'Design' in _dir:
                     path = os.path.join(root, _dir, file_name)
                     if os.path.exists(path):
+                        # 重新读取图纸
+                        # 创建临时窗口
+                        _win = TempTransparentWin('white')\
+                            if GUI.current_Frame == GUI.ShowFrame else TempTransparentWin("black")
+                        del self.DesignReader
+                        # try:
                         self.DesignReader = ReadDesign(path)
+                        self.DesignReader.read_parts()
+                        self.DesignReader.read_armors()
+                        self.DesignReader.read_rebars()
+                        # 更新所有数据
                         GUI.Left.update_treeview()
                         GUI.ShowFrame.update_messages()
+                        GUI.AnalFrame.update_plots()
                         self.last_design = self.combox.get()
+                        # 删除临时窗口
+                        _win.destroy()
+                        self.ReadingDesign = False
                         return
+                        # except Exception as e:
+                        #     # 删除临时窗口
+                        #     _win.destroy()
+                        #     show_text(f'读取图纸失败！\n{e}\n', 'stderr')
+                        #     self.ReadingDesign = False
 
 
 class TkinterGUI:
     def __init__(self):
         self.root = tk.Tk()
         set_window(self.root, "PTB Blueprint Reader")
-        # 检查是否有图标文件
-        self.ICO_PATH = os.path.join(os.path.abspath('.'), 'PTB.ico')
-        if not os.path.exists(self.ICO_PATH):
-            # 设置窗口图标
-            self.ICO = base64.b64decode(ICO)
-            # 把图标写入文件
-            with open(self.ICO_PATH, 'wb') as f:
-                f.write(self.ICO)
-        # 设置窗口图标
-        self.root.iconbitmap(self.ICO_PATH)
+        self.ICO = tk.PhotoImage(data=base64.b64decode(ICO))
+        self.root.iconphoto(True, self.ICO)
         # notebook
         self.notebook_main = ttk.Notebook(self.root)
         self.Bottom = BottomFrame(self.root, redirect=True)
         self.Left = LeftFrame(self.root)
-        # 初始化标签页
+        # 初始化标签页Frame
         self.Frame_BP = tk.Frame(bg=BG_COLOUR)
+        self.Frame_AN = tk.Frame(bg=BG_COLOUR)
         self.Frame_CP = tk.Frame(bg=BG_COLOUR)
         self.Frame_CA = tk.Frame(bg=BG_COLOUR)
         self.Frame_3D = tk.Frame(bg=BG_COLOUR)
-        self.notebook_main.add(self.Frame_BP, text='   图纸详细信息   ')
+        self.notebook_main.add(self.Frame_BP, text='   图纸信息预览   ')
+        self.notebook_main.add(self.Frame_AN, text='   图纸数据分析   ')
         self.notebook_main.add(self.Frame_CP, text='        对比器        ')
         self.notebook_main.add(self.Frame_CA, text='        计算器        ')
         self.notebook_main.add(self.Frame_3D, text='       3D预览       ')
+        # 绑定标签被选中事件
+        self.notebook_main.bind('<<NotebookTabChanged>>', self.tab_changed)
         self.notebook_main.pack(fill='both', side='right', expand=True)
+        # 初始化标签页内容
         self.ShowFrame = None
+        self.AnalFrame = None
         self.CompFrame = None
         self.CalFrame = None
+        self.ThDFrame = None
+        self.all_frames = []
+        # 初始化标签状态
+        self.current_Frame = None
 
     def init(self):
         self.ShowFrame = ShowShipFrame(self.Frame_BP)
+        self.AnalFrame = AnalyseFrame(self.Frame_AN)
         self.CompFrame = CompareFrame(self.Frame_CP)
         self.CalFrame = CalculatorFrame(self.Frame_CA)
+        self.all_frames = [self.ShowFrame, self.AnalFrame, self.CompFrame, self.CalFrame, self.ThDFrame]
+        self.current_Frame = self.all_frames[0]  # 初始化标签状态
+
+    def tab_changed(self, event):
+        if not LOADING:
+            self.current_Frame = self.all_frames[event.widget.index('current')]
+
+    def AnalFrame_animation(self):
+        # 渐入，颜色加深
+        ...
 
 
 class BottomFrame(CodeEditor):
@@ -132,6 +171,7 @@ class CompareFrame:
         tk.Frame(master=self.basic, bg=BG_COLOUR, height=5).pack(side='top', fill='x', expand=False)
         self.top1 = tk.Frame(master=self.basic, bg=BG_COLOUR)
         self.top1.pack(side='top', fill='x', expand=False, pady=3)
+        tk.Frame(master=self.top1, bg=BG_COLOUR, width=50).pack(side='left', fill='y', expand=False)
         self.combox = text_with_combox(
             self.top1, '选择要对比的设计:', (FONT0, FONT_SIZE), 16, 15, self.available_designs, False)
         # 添加按钮
@@ -141,6 +181,11 @@ class CompareFrame:
             style="3.TButton", master=self.top1, text='开始对比', width=10, command=self.start)
         self.CompareBt.pack(side='right', fill='y', expand=False, padx=100)
         tk.Frame(master=self.basic, bg=BG_COLOUR2, height=3).pack(side='top', fill='x', expand=False)
+        # 添加右键菜单
+        self.menu = MyMenu(self.basic, {'F1': self.F1})
+
+    def F1(self):
+        ...
 
     def start(self):
         if self.combox.get() == '':
@@ -153,6 +198,40 @@ class CompareFrame:
         # 开始对比
 
 
+class AnalyseFrame:
+    def __init__(self, frm):
+        self.basic = frm
+        # 添加右键菜单
+        self.menu = MyMenu(self.basic, {'F1': self.F1})
+        # 绘图
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+        plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
+        # 重量分布图
+        self.pltCv1 = tk.Canvas(self.basic, bg=BG_COLOUR, highlightthickness=0, width=460, height=500)
+        self.pltCv1.pack(side='left', expand=True)
+        self.pie1 = Plot(self.pltCv1, "重量分布图")
+        # 重量分布图
+        self.pltCv2 = tk.Canvas(self.basic, bg="black", highlightthickness=0, width=460, height=500)
+        self.pltCv2.pack(side='left', expand=True)
+        self.pie2 = Plot(self.pltCv2, "火力结构图")
+
+    def F1(self):
+        ...
+
+    def update_plots(self):
+        DR = Handler.DesignReader
+        self.pie1.pie1(
+            DR.WeightRelation,
+            ["船体", "装甲舱增重", "装甲板", "动力系统", "火炮", "鱼雷", "防空炮", "舰载机增重", "装饰"],
+            ['#ffffff', '#ffd6d0', '#ffaa99', '#99ff99', '#ffaaaa', '#aaaaff', '#aaffff', '#eeccff', '#ee00ff']
+        )
+        # self.pie2.pie1(
+        #     DR.WeightRelation
+        #
+        # )
+
+
 class ShowShipFrame:
     def __init__(self, frm):
         self.basic = frm
@@ -163,10 +242,7 @@ class ShowShipFrame:
         self.canvas = tk.Canvas(self.basic, width=self.BG1.width(), height=self.BG1.height(), bg=BG_COLOUR)
         self.canvas.pack(side='top', fill='both', expand=True)
         self.canvas.create_image(-215, -130, image=self.BG1, anchor='nw')
-        # 添加右键菜单
-        self.menu = tk.Menu(self.canvas, tearoff=0)
-        self.menu.add_command(label='F1', command=self.F1)
-        self.canvas.bind('<Button-3>', self.popup)
+        self.menu = MyMenu(self.canvas, {'F1': self.F1})  # 添加右键菜单
         # -----------------------------------------文字-----------------------------------------
         # 覆盖图片显示文字
         self.LineH = 55
@@ -198,13 +274,10 @@ class ShowShipFrame:
         self.IntroCv.config(bg='white', highlightthickness=0)
         self.IntroCv.bind('<MouseWheel>', self.on_mousewheel)  # 鼠标滚轮
         # 插入图片
-        self.ImgX = -345
+        self.ImgX = -340
         self.ImgY = -265
         self.IntroCv.create_image(self.ImgX, self.ImgY, image=self.BG1, anchor='nw',
                                   tags=('introduction', 'image'))
-
-    def popup(self, event):
-        self.menu.post(event.x_root, event.y_root)
 
     def F1(self):
         ...
@@ -324,13 +397,7 @@ class CalculatorFrame:
     def __init__(self, frm):
         self.basic = frm
         self.canvas = tk.Canvas(master=self.basic, bg=BG_COLOUR, width=1300, height=700, highlightthickness=0)
-        # 添加右键菜单
-        self.menu = tk.Menu(self.canvas, tearoff=0)
-        self.menu.add_command(label='F1', command=self.F1)
-        self.canvas.bind('<Button-3>', self.popup)
-
-    def popup(self, event):
-        self.menu.post(event.x_root, event.y_root)
+        self.menu = MyMenu(self.canvas, {'F1': self.F1})  # 添加右键菜单
 
     def F1(self):
         ...
@@ -350,26 +417,28 @@ class LeftFrame:
         self.LOGO = tk.PhotoImage(data=self.LOGO)
         self.logo_label = tk.Label(master=self.basic, image=self.LOGO, bg=BG_COLOUR)
         self.logo_label.pack(side='top', fill='x', expand=False)
-
-        self.available_designs = []
         # 检索同级目录所有头为Design的文件夹，比如Design31099等
+        self.available_designs = []
         self.all_folders = [f for f in os.listdir(
             '.') if os.path.isdir(os.path.join('.', f)) and f.startswith('Design')]
-        # 检索文件夹下的所有xml文件
-        for folder in self.all_folders:
+        for folder in self.all_folders:  # 检索文件夹下的所有xml文件
             for f in os.listdir(folder):
                 if os.path.isfile(os.path.join(folder, f)) and f.endswith('.xml'):
                     self.available_designs.append(f[:-4])
         # 创建下拉框
         self.top1 = tk.Frame(master=self.basic, bg=BG_COLOUR)
-        self.top1.pack(side='top', fill='x', expand=False, pady=6)
+        self.top1.pack(side='top', fill='x', expand=False, pady=0)
         self.combox = text_with_combox(
-            self.top1, '选择设计:', (FONT0, FONT_SIZE), 9, 15, self.available_designs, False)
-        # 创建2列的treeview，但是要隐藏第一行表头
-        # 用style设置行高和字体，居中显示
+            self.top1, '选择设计:', (FONT1, FONT_SIZE), 9, 15, self.available_designs, False)
+        # 添加按钮
         style = ttk.Style()
         style.configure(
             "Treeview", rowheight=36, font=(FONT0, FONT_SIZE), foreground=FG_COLOUR, background=BG_COLOUR)
+        style.configure("1.TButton", font=(FONT0, FONT_SIZE), foreground=FG_COLOUR, background=BG_COLOUR)
+        self.button = ttk.Button(
+            master=self.basic, text='读取图纸', style='1.TButton')
+        self.button.pack(side='top', fill='x', expand=False, padx=15)
+        # 创建2列的treeview，但是要隐藏第一行表头
         self.tree = ttk.Treeview(
             self.basic, columns=('key', 'value'), show="headings", height=13, style="Treeview")
         self.tree['show'] = ''
@@ -377,21 +446,53 @@ class LeftFrame:
         self.tree.column('value', width=165, anchor='center')
         self.tree.heading('key', text="", anchor="w")
         self.tree.heading('value', text="", anchor="w")
-        self.tree.pack(side='top', expand=False)
+        self.tree.pack(side='top', expand=False, pady=6)
         # 初始化左边栏的内容
         # 定义初始化数据
         data = [
-            ('设计师ID', ''),
+            ('设计者ID', ''),
             ('战舰类型', ''),
             ('排水体积比', ''),
             ('长宽吃水比', ''),
             ('方形系数', ''),
-            ('装甲舱重量', ''),
+            ('装甲板重量', ''),
+            ('装甲舱加重', ''),
+            ('火炮重量', ''),
+            ('排烟器种类', ''),
+            ('轮机数量', ''),
+            ('轮机重量', ''),
+            ('推重比', '')
         ]
-
         # 批量插入数据
         for item in data:
             self.tree.insert('', 'end', values=item)
+        # 添加右键菜单
+        self.tree_menu = MyMenu(self.tree, {
+            '刷新': self.update_treeview,
+            '详细信息': self.show_detail,
+        })
+        self.menu = MyMenu(self.basic, {'刷新': self.update_treeview})
+
+    def show_detail(self):
+        # 获取当前被选中的treeview的item
+        item = self.tree.focus()
+        # 如果没有选中任何item，就提示未选择
+        if not item:
+            messagebox.showinfo('提示', '未选择任何条目，请先单击条目至选中状态')
+            return
+        # 显示消息框
+        item = self.tree.item(item)['values']
+        text = {
+            "设计者ID": "设计者ID：\n工艺战舰设计者的标识符，由注册时系统自动生成。\nID越小，说明该设计者越早注册。",
+            "战舰类型": "战舰类型：\n这里的战舰类型包括特化类型。",
+            "排水体积比": "排水体积比：\n战舰的排水体积与总体积的比值。该值越大，说明该设计的浮力储备越小。\n浮力储备不足时，战舰更容易被击沉。",
+            "长宽吃水比": "长宽吃水比：\n战舰的长度与宽度的比值.前值越大，说明该设计的船体越细长，战舰越容易获得高速，但转向性能越差。",
+            "方形系数": "方形系数：\n战舰的排水体积与水线下战舰方形体积的比值。该值越小，说明该设计的船体越扁平，战舰越容易获得高速，但稳定性越差。",
+            "装甲板重量": "装甲板重量：\n战舰的装甲板总重量(吨)",
+            "装甲舱加重": "装甲舱重量(皮重)：\n战舰的装甲舱总重量(吨)减相等体积的船体重量。",
+            "火炮重量": "火炮重量：\n战舰的火炮总重量(吨)\n这里的火炮不包括防空炮和鱼雷发射器。",
+        }
+        messagebox.showinfo('详细信息', text[item[0]])
 
     def update_treeview(self):
         """
@@ -399,11 +500,31 @@ class LeftFrame:
         :return:
         """
         DR = Handler.DesignReader
-        DR.read_parts()
-        total_armor_weight = 0.0
-        for armor in DR.Parts['装甲']:
-            total_armor_weight += float(armor.Weight)
-        total_armor_weight = round(total_armor_weight, 3)
+        turbine_names = ''
+        turbine_num = 0
+        turbine_weight = 0
+        # 初步处理部分数据
+        if len(DR.Turbines) == 0:
+            pass
+        elif len(DR.Turbines) == 1:
+            turbine_names = DR.Turbines[0][0]
+            turbine_num = int(
+                DR.Turbines[0][1]["单烟轮机数量"].split(' × ')[0]
+            ) * int(
+                DR.Turbines[0][1]["单烟轮机数量"].split(' × ')[1]
+            )
+            turbine_weight = DR.Turbines[0][1]["单烟轮机重量"]
+        else:
+            for i in DR.Turbines:
+                turbine_names += i[0] + ' '
+                turbine_num += int(
+                    i[1]["单烟轮机数量"].split(' × ')[0]
+                ) * int(
+                    i[1]["单烟轮机数量"].split(' × ')[1]
+                )
+                turbine_weight += i[1]["单烟轮机重量"]
+        if not DR:
+            return
         # 直接修改treeview的值
         datas = [
             DR.DesignerID,
@@ -411,7 +532,13 @@ class LeftFrame:
             str(DR.weight_ratio),
             str(DR.Len_Wid_Dra),
             str(DR.SquareCoefficient),
-            f"{total_armor_weight} t",
+            f"{DR.armorboards_weight} t",
+            f"{DR.parts_weight['装甲舱增重']} t",
+            f"{DR.parts_weight['火炮']} t",
+            turbine_names,
+            turbine_num,
+            f"{turbine_weight} t",
+            f"{round(DR.HP / DR.Displacement_in_t, 3)}"
         ]
         try:
             for i in range(len(datas)):
@@ -452,9 +579,13 @@ def show_text(text, mode):
 
 
 if __name__ == '__main__':
+    # 初始化GUI
+    LOADING = True
     GUI = TkinterGUI()
     GUI.init()
     Handler = MainHandler()
-    GUI.ShowFrame.update_messages()
+    GUI.Left.button.config(command=Handler.combox_update)
+    Handler.combox_update()
+    LOADING = False
     # 启动主循环
     GUI.root.mainloop()
