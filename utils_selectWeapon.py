@@ -2,7 +2,7 @@
 This file contains the class WeaponSelector, which is used to select a weapon
 """
 from utils_TkGUI import *
-from PartAttrMaps import *
+from Data.PartAttrMaps import *
 
 
 def show_weapon_name_rule():

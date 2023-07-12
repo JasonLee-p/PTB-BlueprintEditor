@@ -6,7 +6,7 @@
 import xml.etree.ElementTree as ET
 from typing import Tuple
 # 项目内部引用
-from PartAttrMaps import *
+from Data.PartAttrMaps import *
 
 WEIGHT_MULTIPLIER = 0.216  # xml的weight值与真实重量的比例，也就是（3/5）的三次方
 HULL_DENSITY = 0.2  # 普通船体的密度
