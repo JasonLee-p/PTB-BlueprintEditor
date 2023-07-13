@@ -11,14 +11,17 @@ Description:
 import base64
 import os
 # 项目文件
-from IMGS import *
+from tkinter import Tk, PhotoImage
+
+from images.Img_main import *
+from images.Img_shipType import *
+from images.Img_special import *
 from utils.TkGUI import *
 from utils.plt_ import *
-from xml_reader import DesignAnalyser, ReadXML, Part, MainWeapon, AA, Funnel, Armor, ArmorBoard, Rebar
-
+from design_reader import DesignAnalyser, ReadXML, Part, ArmorBoard, Rebar
 
 LOCAL_ADDRESS = os.getcwd()
-REDIRECT = True
+REDIRECT = False
 
 
 class MainHandler:
@@ -28,6 +31,8 @@ class MainHandler:
         self.combox.bind('<Return>', self.combox_update)
         self.combox.bind('<Button-1>', self.combox_update)
         self.combox.bind('<MouseWheel>', self.combox_update)
+        # Q: 如何获取combobox默认的MouseWheel内容滚动事件？
+        # A:
         self.last_design = None
         self.DesignReader = None
         self.Analyser = None
@@ -38,67 +43,73 @@ class MainHandler:
         更新所有信息
         :return:
         """
-        if self.last_design == self.combox.get():
+        # 获取combobox的可用内容
+        all_values = self.combox.cget('values')
+        next_index = list(all_values).index(self.combox.get())
+        # 如果是鼠标事件
+        if event is not None and event.delta < 0:
+            next_index -= event.delta // 120
+            if next_index >= len(all_values):
+                next_index = len(all_values) - 1
+        elif event is not None and event.delta > 0:
+            next_index -= event.delta // 120
+            if next_index < 0:
+                next_index = 0
+        if self.last_design == all_values[next_index]:
             return
         if self.ReadingDesign:
             return
         self.ReadingDesign = True
-        file_name = self.combox.get() + '.xml'
-        # 在同目录下寻找有Design字样的文件夹:
-        for root, dirs, files in os.walk(LOCAL_ADDRESS):
-            for _dir in dirs:
-                if 'Design' in _dir:
-                    path = os.path.join(root, _dir, file_name)
-                    if os.path.exists(path):
-                        # 重新读取图纸
-                        # 创建临时窗口
-                        _win = TempTransparentWin('white')\
-                            if GUI.current_Frame == GUI.ShowFrame else TempTransparentWin("black")
-                        # 删除上一艘图纸的所有信息
-                        if self.DesignReader is not None:
-                            self.DesignReader.change_ship()
-                            del self.DesignReader
-                            del self.Analyser
-                        # 读取图纸
-                        self.DesignReader = ReadXML(path)
-                        # 获取其他信息
-                        Part.get_all_information()
-                        ArmorBoard.get_all_information()
-                        Rebar.get_all_information()
-                        # 分析部分数据
-                        self.Analyser = DesignAnalyser(self.DesignReader.design)
-                        # 更新所有数据
-                        GUI.Left.update_treeview()
-                        GUI.ShowFrame.update_messages()
-                        GUI.AnalFrame.update_plots()
-                        self.last_design = self.combox.get()
-                        # 删除临时窗口
-                        _win.destroy()
-                        self.ReadingDesign = False
-                        return
-                        # except Exception as e:
-                        #     # 删除临时窗口
-                        #     _win.destroy()
-                        #     show_text(f'读取图纸失败！\n{e}\n', 'stderr')
-                        #     self.ReadingDesign = False
+        file_name = all_values[next_index] + '.xml'
+        # 只在当前文件夹下搜索
+        for folder in os.listdir(LOCAL_ADDRESS):
+            if 'Design' in folder:
+                path = os.path.join(LOCAL_ADDRESS, folder, file_name)
+                if os.path.exists(path):
+                    # 重新读取图纸
+                    # 创建临时窗口
+                    _win = TempTransparentWin('white') \
+                        if GUI.current_Frame == GUI.ShowFrame else TempTransparentWin("black")
+                    # 删除上一艘图纸的所有信息
+                    if self.DesignReader is not None:
+                        self.DesignReader.change_ship()
+                    del self.DesignReader
+                    del self.Analyser
+                    # 读取图纸
+                    self.DesignReader = ReadXML(path)
+                    # 获取其他信息
+                    Part.get_all_information()
+                    ArmorBoard.get_all_information()
+                    Rebar.get_all_information()
+                    # 分析部分数据
+                    self.Analyser = DesignAnalyser(self.DesignReader.design)
+                    # 更新所有数据
+                    GUI.Left.update_treeview()
+                    GUI.ShowFrame.update_messages()
+                    GUI.AnalFrame.update_plots()
+                    self.last_design = all_values[next_index]
+                    # 删除临时窗口
+                    _win.destroy()
+                    self.ReadingDesign = False
+                    return
 
 
 class TkinterGUI:
     def __init__(self):
-        self.root = tk.Tk()
+        self.root = Tk()
         set_window(self.root, "PTB Blueprint Reader")
-        self.ICO = tk.PhotoImage(data=base64.b64decode(ICO))
+        self.ICO = PhotoImage(data=base64.b64decode(ICO))
         self.root.iconphoto(True, self.ICO)
         # notebook
-        self.notebook_main = ttk.Notebook(self.root)
+        self.notebook_main = Notebook(self.root)
         self.Bottom = BottomFrame(self.root, redirect=REDIRECT)
         self.Left = LeftFrame(self.root)
         # 初始化标签页Frame
-        self.Frame_BP = tk.Frame(bg=BG_COLOUR)
-        self.Frame_AN = tk.Frame(bg=BG_COLOUR)
-        self.Frame_CP = tk.Frame(bg=BG_COLOUR)
-        self.Frame_CA = tk.Frame(bg=BG_COLOUR)
-        self.Frame_3D = tk.Frame(bg=BG_COLOUR)
+        self.Frame_BP = Frame(bg=BG_COLOUR)
+        self.Frame_AN = Frame(bg=BG_COLOUR)
+        self.Frame_CP = Frame(bg=BG_COLOUR)
+        self.Frame_CA = Frame(bg=BG_COLOUR)
+        self.Frame_3D = Frame(bg=BG_COLOUR)
         self.notebook_main.add(self.Frame_BP, text='   图纸信息预览   ')
         self.notebook_main.add(self.Frame_AN, text='   图纸数据分析   ')
         self.notebook_main.add(self.Frame_CP, text='        对比器        ')
@@ -140,13 +151,13 @@ class BottomFrame(CodeEditor):
     """
 
     def __init__(self, frame, redirect=True):
-        self.basic = tk.Frame(master=frame, bg='ivory', height=270, pady=10)
+        self.basic = Frame(master=frame, bg='ivory', height=270, pady=10)
         self.basic.pack(side='bottom', fill='x', expand=False)
         self.basic.propagate(0)
-        tk.Frame(master=self.basic, bg='ivory', width=15).pack(side='left', fill='y', expand=False)
-        self.left_r_f = tk.Frame(master=self.basic, bg='ivory', width=50)
+        Frame(master=self.basic, bg='ivory', width=15).pack(side='left', fill='y', expand=False)
+        self.left_r_f = Frame(master=self.basic, bg='ivory', width=50)
         self.left_r_f.pack(side='left', fill='y', expand=False)
-        tk.Frame(master=self.basic, bg='ivory', width=10).pack(side='left', fill='y', expand=False)
+        Frame(master=self.basic, bg='ivory', width=10).pack(side='left', fill='y', expand=False)
         super().__init__(self.basic, redirect=redirect)
         # 右键菜单栏：
         self.menu.add_command(label='F1', command=self.F1)
@@ -167,7 +178,7 @@ class BottomFrame(CodeEditor):
 class CompareFrame:
     def __init__(self, frm):
         self.basic = frm
-        self.canvas = tk.Canvas(self.basic, width=800, height=600, bg=BG_COLOUR)
+        self.canvas = Canvas(self.basic, width=800, height=600, bg=BG_COLOUR)
         self.available_designs = []
         # 检索同级目录所有头为Design的文件夹，比如Design31099等
         self.all_folders = [f for f in os.listdir(
@@ -178,19 +189,19 @@ class CompareFrame:
                 if os.path.isfile(os.path.join(folder, f)) and f.endswith('.xml'):
                     self.available_designs.append(f[:-4])
         # 创建下拉框
-        tk.Frame(master=self.basic, bg=BG_COLOUR, height=5).pack(side='top', fill='x', expand=False)
-        self.top1 = tk.Frame(master=self.basic, bg=BG_COLOUR)
+        Frame(master=self.basic, bg=BG_COLOUR, height=5).pack(side='top', fill='x', expand=False)
+        self.top1 = Frame(master=self.basic, bg=BG_COLOUR)
         self.top1.pack(side='top', fill='x', expand=False, pady=3)
-        tk.Frame(master=self.top1, bg=BG_COLOUR, width=50).pack(side='left', fill='y', expand=False)
+        Frame(master=self.top1, bg=BG_COLOUR, width=50).pack(side='left', fill='y', expand=False)
         self.combox = text_with_combox(
             self.top1, '选择要对比的设计:', (FONT0, FONT_SIZE), 16, 15, self.available_designs, False)
         # 添加按钮
-        ttk.Style().configure("3.TButton", padding=5, relief="flat",
-                              background=BG_COLOUR, foreground='firebrick', font=(FONT0, FONT_SIZE))
-        self.CompareBt = ttk.Button(
+        ttkStyle().configure("3.TButton", padding=5, relief="flat",
+                             background=BG_COLOUR, foreground='firebrick', font=(FONT0, FONT_SIZE))
+        self.CompareBt = ttkButton(
             style="3.TButton", master=self.top1, text='开始对比', width=10, command=self.start)
         self.CompareBt.pack(side='right', fill='y', expand=False, padx=100)
-        tk.Frame(master=self.basic, bg=BG_COLOUR2, height=3).pack(side='top', fill='x', expand=False)
+        Frame(master=self.basic, bg=BG_COLOUR2, height=3).pack(side='top', fill='x', expand=False)
         # 添加右键菜单
         self.menu = MyMenu(self.basic, {'F1': self.F1})
 
@@ -211,35 +222,53 @@ class CompareFrame:
 class AnalyseFrame:
     def __init__(self, frm):
         self.basic = frm
+        # 添加顶部船只名称显示
+        self.top = Frame(master=self.basic, bg=BG_COLOUR, height=50)
+        self.top.pack(side='top', fill='x', expand=False, pady=3)
+        self.top.propagate(0)
+        Frame(master=self.top, bg=BG_COLOUR, width=30).pack(side='right', fill='y', expand=False)
+        self.shipName_var = StringVar()
+        self.shipName_f = Label(master=self.top, textvariable=self.shipName_var, bg=BG_COLOUR, font=(FONT0, 17))
+        self.shipName_f.pack(side='left', fill='y', expand=True, padx=10, pady=5)
+        # 添加中间的分割线
+        Frame(master=self.basic, bg=BG_COLOUR2, height=5).pack(side='top', fill='x', expand=False)
+        # 给右边留出更多空白
+        Frame(master=self.basic, bg=BG_COLOUR, width=30).pack(side='right', fill='y', expand=False)
         # 添加右键菜单
         self.menu = MyMenu(self.basic, {'F1': self.F1})
+
         # 绘图
         plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
         plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
         # 重量分布图
-        self.pltCv1 = tk.Canvas(self.basic, bg=BG_COLOUR, highlightthickness=0, width=460, height=500)
+        self.pltCv1 = Canvas(self.basic, bg=BG_COLOUR, highlightthickness=0, width=460, height=500)
         self.pltCv1.pack(side='left', expand=True)
         self.pie1 = Plot(self.pltCv1, "重量分布图")
         # 重量分布图
-        self.pltCv2 = tk.Canvas(self.basic, bg="black", highlightthickness=0, width=460, height=500)
+        self.pltCv2 = Canvas(self.basic, bg="black", highlightthickness=0, width=460, height=500)
         self.pltCv2.pack(side='left', expand=True)
         self.pie2 = Plot(self.pltCv2, "火力结构图")
+        self.basic.update()
 
     def F1(self):
         ...
 
     def update_plots(self):
         ANLS = Handler.Analyser
+        self.shipName_var.set(ANLS.ShipName)
         self.pie1.pie1(
             ANLS.weight_relation_data,
             ["船体", "装甲舱增重", "装甲板", "动力系统", "火炮", "鱼雷", "防空炮", "舰载机增重", "装饰"],
             ['#ffffff', '#ffd6d0', '#ffaa99', '#99ff99', '#ffaaaa', '#aaaaff', '#aaffff', '#eeccff', '#ee00ff']
         )
-        # self.pie2.pie1(
-        #     DR.WeightRelation
-        #
-        # )
+        self.pie2.pie1(
+            ANLS.right_frame0_data1,
+            ["主炮耗弹", "副炮耗弹", "鱼雷耗弹", "防空耗弹"],
+            ['#ffaaaa', '#ffd6d0', '#aaaaff', '#aaffff'],
+            show_threshold=0.01,
+            show_value=True
+        )
 
 
 class ShowShipFrame:
@@ -247,9 +276,9 @@ class ShowShipFrame:
         self.basic = frm
         # 读取图片，把base64编码的图片解码成可用格式
         self.bg_base64 = base64.b64decode(BG)
-        self.BG1 = tk.PhotoImage(data=self.bg_base64)
+        self.BG1 = PhotoImage(data=self.bg_base64)
         # 显示图片
-        self.canvas = tk.Canvas(self.basic, width=self.BG1.width(), height=self.BG1.height(), bg=BG_COLOUR)
+        self.canvas = Canvas(self.basic, width=self.BG1.width(), height=self.BG1.height(), bg=BG_COLOUR)
         self.canvas.pack(side='top', fill='both', expand=True)
         self.canvas.create_image(-215, -130, image=self.BG1, anchor='nw')
         self.menu = MyMenu(self.canvas, {'F1': self.F1})  # 添加右键菜单
@@ -279,7 +308,7 @@ class ShowShipFrame:
         self.canvas.tag_bind(self.Button, '<Button-1>', self.button_down)
         self.canvas.tag_bind(self.ButtonText, '<Button-1>', self.button_down)
         # 简介界面
-        self.IntroCv = tk.Canvas(self.canvas, width=1300, height=500)
+        self.IntroCv = Canvas(self.canvas, width=1300, height=500)
         self.IntroCv.config(scrollregion=(0, 0, 1300, 500))  # Canvas显示大小
         self.IntroCv.config(bg='white', highlightthickness=0)
         self.IntroCv.bind('<MouseWheel>', self.on_mousewheel)  # 鼠标滚轮
@@ -313,7 +342,7 @@ class ShowShipFrame:
         self.move_image()
 
     @staticmethod
-    def text_wrap(text, length=50):
+    def text_wrap(text, length=48):
         # 对文字进行换行处理
         text = text.split('\n')
         for i in range(len(text)):
@@ -384,7 +413,7 @@ class ShowShipFrame:
 class CalculatorFrame:
     def __init__(self, frm):
         self.basic = frm
-        self.canvas = tk.Canvas(master=self.basic, bg=BG_COLOUR, width=1300, height=700, highlightthickness=0)
+        self.canvas = Canvas(master=self.basic, bg=BG_COLOUR, width=1300, height=700, highlightthickness=0)
         self.menu = MyMenu(self.canvas, {'F1': self.F1})  # 添加右键菜单
 
     def F1(self):
@@ -397,13 +426,13 @@ class LeftFrame:
     """
 
     def __init__(self, frm):
-        self.basic = tk.Frame(master=frm, bg=BG_COLOUR, width=320)
+        self.basic = Frame(master=frm, bg=BG_COLOUR, width=320)
         self.basic.propagate(0)
         self.basic.pack(side='left', padx=15, pady=5, fill='y', expand=False)
-        tk.Frame(master=self.basic, bg=BG_COLOUR, height=12).pack(side='top', fill='y', expand=False)
+        Frame(master=self.basic, bg=BG_COLOUR, height=12).pack(side='top', fill='y', expand=False)
         self.LOGO = LOGO
-        self.LOGO = tk.PhotoImage(data=self.LOGO)
-        self.logo_label = tk.Label(master=self.basic, image=self.LOGO, bg=BG_COLOUR)
+        self.LOGO = PhotoImage(data=self.LOGO)
+        self.logo_label = Label(master=self.basic, image=self.LOGO, bg=BG_COLOUR)
         self.logo_label.pack(side='top', fill='x', expand=False)
         # 检索同级目录所有头为Design的文件夹，比如Design31099等
         self.available_designs = []
@@ -414,20 +443,62 @@ class LeftFrame:
                 if os.path.isfile(os.path.join(folder, f)) and f.endswith('.xml'):
                     self.available_designs.append(f[:-4])
         # 创建下拉框
-        self.top1 = tk.Frame(master=self.basic, bg=BG_COLOUR)
+        self.top1 = Frame(master=self.basic, bg=BG_COLOUR)
         self.top1.pack(side='top', fill='x', expand=False, pady=0)
         self.combox = text_with_combox(
             self.top1, '选择设计:', (FONT1, FONT_SIZE), 9, 15, self.available_designs, False)
         # 添加按钮
-        style = ttk.Style()
+        style = ttkStyle()
         style.configure(
             "Treeview", rowheight=36, font=(FONT0, FONT_SIZE), foreground=FG_COLOUR, background=BG_COLOUR)
         style.configure("1.TButton", font=(FONT0, FONT_SIZE), foreground=FG_COLOUR, background=BG_COLOUR)
-        self.button = ttk.Button(
+        self.button = ttkButton(
             master=self.basic, text='读取图纸', style='1.TButton')
         self.button.pack(side='top', fill='x', expand=False, padx=15)
+        # 船只类型显示栏
+        Frame(master=self.basic, bg=BG_COLOUR, height=5).pack(side='top', fill='x', expand=False)
+        self.top2 = Frame(master=self.basic, bg=BG_COLOUR)
+        self.top2.pack(side='top', fill='x', expand=False, pady=0)
+        # 初始化显示的图片变量
+        _UNKNOWN = PhotoImage(data=UNKNOWN)
+        _UB = PhotoImage(data=UB)
+        _CS = PhotoImage(data=CS)
+        _DD = PhotoImage(data=DD)
+        _CL = PhotoImage(data=CL)
+        _CA = PhotoImage(data=CA)
+        _BM = PhotoImage(data=BM)
+        _BC = PhotoImage(data=BC)
+        _BB = PhotoImage(data=BB)
+
+        # 所有船只类型的图片
+        self.type_map = {
+            "未知": _UNKNOWN, "UB": _UB, "CS": _CS, "DD": _DD, "CL": _CL, "CA": _CA, "BM": _BM, "BC": _BC, "BB": _BB,
+        }
+        # 所有特化类型的图片
+        _DefaultS = PhotoImage(data=DefaultS)
+        _MainS = PhotoImage(data=MainS)
+        _ViceS = PhotoImage(data=ViceS)
+        _TorpedoS = PhotoImage(data=TorpedoS)
+        _AAS = PhotoImage(data=AAS)
+        _PlaneS = PhotoImage(data=PlaneS)
+        _Plane1S = PhotoImage(data=Plane1S)
+        _Plane2S = PhotoImage(data=Plane2S)
+        _HeavyS = PhotoImage(data=HeavyS)
+        _DefenceS = PhotoImage(data=DefenceS)
+        _SpeedS = PhotoImage(data=SpeedS)
+
+        self.special_map = {
+            "未知": _DefaultS, "DF": _DefaultS, "SM": _MainS, "SW": _ViceS, "TS": _TorpedoS, "AAS": _AAS,
+            "CR": _PlaneS, "CRI": _Plane1S, "CRII": _Plane2S, "HS": _HeavyS, "PT": _DefenceS, "SS": _SpeedS,
+        }
+        # 创建显示图片的label
+        Frame(master=self.top2, bg=BG_COLOUR, width=20).pack(side='right', fill='y', expand=False)
+        self.special = Label(image=self.special_map['未知'], master=self.top2, bg='black')
+        self.special.pack(side='right', fill='x', expand=False, padx=5)
+        self.ship_type = Label(image=self.type_map['未知'], master=self.top2, bg=BG_COLOUR)
+        self.ship_type.pack(side='right', fill='x', expand=False, padx=5)
         # 创建2列的treeview，但是要隐藏第一行表头
-        self.tree = ttk.Treeview(
+        self.tree = Treeview(
             self.basic, columns=('key', 'value'), show="headings", height=13, style="Treeview")
         self.tree['show'] = ''
         self.tree.column('key', width=125, anchor='e')
@@ -439,7 +510,7 @@ class LeftFrame:
         # 定义初始化数据
         data = [
             ('设计者ID', ''),
-            ('战舰类型', ''),
+            # ('战舰类型', ''),
             ('排水体积比', ''),
             ('长宽吃水比', ''),
             ('方形系数', ''),
@@ -460,6 +531,9 @@ class LeftFrame:
             '详细信息': self.show_detail,
         })
         self.menu = MyMenu(self.basic, {'刷新': self.update_treeview})
+        # 事件管理
+        self.last_ship_type = '未知'
+        self.last_ship_special = '未知'
 
     def show_detail(self):
         # 获取当前被选中的treeview的item
@@ -472,7 +546,7 @@ class LeftFrame:
         item = self.tree.item(item)['values']
         text = {
             "设计者ID": "设计者ID：\n工艺战舰设计者的标识符，由注册时系统自动生成。\nID越小，说明该设计者越早注册。",
-            "战舰类型": "战舰类型：\n这里的战舰类型包括特化类型。",
+            # "战舰类型": "战舰类型：\n这里的战舰类型包括特化类型。",
             "排水体积比": "排水体积比：\n战舰的排水体积与总体积的比值。该值越大，说明该设计的浮力储备越小。\n浮力储备不足时，战舰更容易被击沉。",
             "长宽吃水比": "长宽吃水比：\n战舰的长度与宽度的比值.前值越大，说明该设计的船体越细长，战舰越容易获得高速，但转向性能越差。",
             "方形系数": "方形系数：\n战舰的排水体积与水线下战舰方形体积的比值。该值越小，说明该设计的船体越扁平，战舰越容易获得高速，但稳定性越差。",
@@ -483,7 +557,6 @@ class LeftFrame:
             "轮机数量": "轮机数量：\n战舰的轮机数量。",
             "轮机重量": "轮机重量：\n战舰的轮机总重量(吨)",
             "推重比": "推重比：\n战舰的推重比，即战舰的推进力与战舰的总重量的比值。一般该值越大，说明该战舰越容易获得高速。"
-
         }
         messagebox.showinfo('详细信息', text[item[0]])
 
@@ -492,7 +565,14 @@ class LeftFrame:
         更新treeview
         :return:
         """
-        _data = list(Handler.Analyser.left_frame_data.values())
+        ANLS = Handler.Analyser
+        if ANLS.ShipType != self.last_ship_type:
+            self.ship_type.config(image=self.type_map[ANLS.ShipType])
+            self.last_ship_type = ANLS.ShipType
+        if ANLS.ShipSpecial != self.last_ship_special:
+            self.special.config(image=self.special_map[ANLS.ShipSpecial])
+            self.last_ship_special = ANLS.ShipSpecial
+        _data = list(ANLS.left_frame_data.values())
         for i in range(len(_data)):
             self.tree.set(f'I00{self.index2sixteen(i)}', 'value', _data[i])
 

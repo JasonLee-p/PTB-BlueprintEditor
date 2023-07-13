@@ -6,9 +6,15 @@ import ctypes
 import sys
 import json
 import time
-import tkinter as tk
+from tkinter import Frame, Label, Canvas, Button, Scrollbar,\
+    Text, Menu, Toplevel,\
+    StringVar, IntVar,\
+    TclError, INSERT
 from tkinter import messagebox, filedialog
-from tkinter import ttk
+from tkinter.ttk import Combobox, Treeview, Notebook
+from tkinter.ttk import Style as ttkStyle
+from tkinter.ttk import Button as ttkButton
+from tkinter.ttk import Entry as ttkEntry
 
 """
 tkinter 支持字体：
@@ -118,7 +124,7 @@ def set_window(window, title: str, transparent=True):
     window.tk.call('tk', 'scaling', ScaleFactor / 75)  # 设置程序缩放
     try:
         window.state("zoomed")
-    except tk.TclError:
+    except TclError:
         w = window.winfo_screenwidth()
         h = window.winfo_screenheight()
         window.geometry("%dx%d" % (w, h))
@@ -129,22 +135,22 @@ def set_window(window, title: str, transparent=True):
 
 
 def main_title(master, text, side):
-    tk.Frame(master=master, bg=BG_COLOUR, height=10).pack(side='top', fill='x')
-    title_v = tk.Label(
+    Frame(master=master, bg=BG_COLOUR, height=10).pack(side='top', fill='x')
+    title_v = Label(
         master,
         text=text,  # 标签的文字
         bg=BG_COLOUR,  # 标签背景颜色
         font=(FONT1, 14),  # 字体和字体大小
         width=30, height=1)  # 标签长宽
     title_v.pack(side=side, pady=0, expand=False, anchor='center')  # 固定窗口位置
-    tk.Frame(master=master, bg=BG_COLOUR, height=6).pack(side='top', fill='x')
-    tk.Frame(master=master, bg='ivory', height=4).pack(side='top', fill='x')
+    Frame(master=master, bg=BG_COLOUR, height=6).pack(side='top', fill='x')
+    Frame(master=master, bg='ivory', height=4).pack(side='top', fill='x')
 
 
 # 显示的音符名
 def title(text, bg_colour):
     def _title(belonging, master, position, font_size, expand, wid, hei, fill=None, padx=0, pady=0, ipadx=0, ipady=0):
-        _title_v = tk.Label(
+        _title_v = Label(
             master,
             text=text,
             bg=bg_colour,  # 标签背景颜色
@@ -159,10 +165,10 @@ def title(text, bg_colour):
 
 
 def button(master, expand, belonging, hit_func, text, side, width, style=None):
-    BTStyle = ttk.Style()
+    BTStyle = ttkStyle()
     BTStyle.configure('TButton', borderradius=5, font=(FONT0, FONT_SIZE))
     _style = style if style else 'TButton'
-    b = ttk.Button(master, text=text, width=width, command=hit_func, style=_style)
+    b = ttkButton(master, text=text, width=width, command=hit_func, style=_style)
     b.configure()
     b.pack(side=side, padx=5, pady=4, expand=expand)
     if belonging:
@@ -172,8 +178,8 @@ def button(master, expand, belonging, hit_func, text, side, width, style=None):
 
 # 定义下拉选择框
 def combox(master, belonging, selected_func, values, position='basic', width=19, height=5, style_name=None):
-    text_var = tk.StringVar()
-    cb = ttk.Combobox(
+    text_var = StringVar()
+    cb = Combobox(
         master, textvariable=text_var, state='readonly',
         font=(FONT0, FONT_SIZE), width=width, height=height,
         values=values
@@ -200,12 +206,12 @@ class MyTreeView:
         self.h = height
         self.w_s = list(columns.values())
         self.style_name = style_name
-        TVStyle = ttk.Style()
+        TVStyle = ttkStyle()
         TVStyle.configure('Treeview', rowheight=self.h, font=(FONT0, FONT_SIZE))
-        self.VScroll1 = tk.Scrollbar(
+        self.VScroll1 = Scrollbar(
             master, relief='flat', troughcolor=BG_COLOUR, width=30, orient='vertical')
         self.VScroll1.pack(side='right', fill='y', padx=0)
-        self.tv = ttk.Treeview(
+        self.tv = Treeview(
             master=master,  # 父容器
             height=len(self.data),  # 表格显示的行数,height行
             columns=self.columns,  # 显示的列
@@ -214,11 +220,11 @@ class MyTreeView:
             yscrollcommand=self.VScroll1.set
         )
         for i in range(len(columns)):
-            self.tv.heading(column=self.columns[i], text=self.columns[i], anchor=tk.CENTER,
+            self.tv.heading(column=self.columns[i], text=self.columns[i], anchor="center",  # 显示表头
                             command=lambda name=self.columns[i]:
                             column_selected(name)
                             )
-            self.tv.column(column=self.columns[i], width=self.w_s[i], minwidth=80, anchor=tk.CENTER, )  # 定义列
+            self.tv.column(column=self.columns[i], width=self.w_s[i], minwidth=80, anchor="center", )  # 定义列
         self.VScroll1.configure(command=self.tv.yview)
         self.tv.bind('<ButtonRelease-1>', self.treeviewClick)
         self.tv.pack(expand=True)
@@ -269,21 +275,21 @@ class PianoRollCV:
         self.key_height = 12
         self.bw = 25
         self.width = 200
-        self.canvas = tk.Canvas(master=master, height=700, bg=BG_COLOUR, bd=0)
-        self.top_sb = tk.Scrollbar(
+        self.canvas = Canvas(master=master, height=700, bg=BG_COLOUR, bd=0)
+        self.top_sb = Scrollbar(
             master, relief='raised', troughcolor=BG_COLOUR, width=15, orient='horizontal',
             command=self.canvas.xview
         )  # 定义水平滚动条
-        self.left_sb = tk.Scrollbar(
+        self.left_sb = Scrollbar(
             master, relief='raised', troughcolor=BG_COLOUR, width=15, orient='vertical',
             command=self.canvas.yview
         )  # 定义水平滚动条
         self.left_sb.pack(side='left', fill='y')
         self.top_sb.pack(side='top', fill='x')  # 放置垂直滚动条在顶部,占满x轴
-        self.cvFrame = tk.Frame(self.canvas, height=90 * (self.key_height + 1), width=self.width)  # 画布滚动区域
+        self.cvFrame = Frame(self.canvas, height=90 * (self.key_height + 1), width=self.width)  # 画布滚动区域
         self.cvFrame.propagate(0)
         self.piano_keys_frames.append(
-            f_ := tk.Frame(self.cvFrame, bg=BG_COLOUR, height=self.key_height, bd=0))
+            f_ := Frame(self.cvFrame, bg=BG_COLOUR, height=self.key_height, bd=0))
         f_.pack(side='top', fill='x', padx=0)
         # # 绘制分割线
         # for j in range(1, 3000 // self.bw + 1):
@@ -292,18 +298,18 @@ class PianoRollCV:
         # 绘制键盘
         for i in range(88):
             if i % 12 in [0, 1, 3, 5, 7, 8, 10]:
-                wk = tk.Frame(self.cvFrame, bg='#555555', height=self.key_height, bd=0)
+                wk = Frame(self.cvFrame, bg='#555555', height=self.key_height, bd=0)
                 wk.pack(side='top', fill='x', padx=0)
                 self.piano_keys_frames.append(wk)
             else:
-                bk = tk.Frame(self.cvFrame, bg='#464646', height=12, bd=0)
+                bk = Frame(self.cvFrame, bg='#464646', height=12, bd=0)
                 bk.pack(side='top', fill='x', padx=0)
                 self.piano_keys_frames.append(bk)
-            tk.Frame(self.cvFrame, bg='#222222', height=1, bd=0).pack(
+            Frame(self.cvFrame, bg='#222222', height=1, bd=0).pack(
                 side='top', fill='x', padx=0)
 
         self.piano_keys_frames.append(
-            _f := tk.Frame(self.cvFrame, bg=BG_COLOUR, height=self.key_height, bd=0))
+            _f := Frame(self.cvFrame, bg=BG_COLOUR, height=self.key_height, bd=0))
         _f.pack(side='top', fill='x', padx=0)
         # TODO: 钢琴
         self.canvas.create_window((0, 0), window=self.cvFrame, anchor='nw')
@@ -359,15 +365,15 @@ class PianoRollCV:
 
     def draw_note(self, note, start_beat, duration):
         keyI = self.midi2keyIndex[note]
-        tk.Frame(self.piano_keys_frames[keyI], bg='burlywood',
-                 width=duration * self.bw - 1, height=40).place(
+        Frame(self.piano_keys_frames[keyI], bg='burlywood',
+              width=duration * self.bw - 1, height=40).place(
             x=start_beat * self.bw, y=0)
 
     def draw_chord(self, chord_obj, start_beat, duration):
         for note in chord_obj.pitch_group:
             keyI = self.midi2keyIndex[note]
-            tk.Frame(self.piano_keys_frames[keyI], bg='burlywood',
-                     width=duration * self.bw - 1, height=40).place(
+            Frame(self.piano_keys_frames[keyI], bg='burlywood',
+                  width=duration * self.bw - 1, height=40).place(
                 x=start_beat * self.bw, y=0)
 
 
@@ -376,16 +382,16 @@ class CPGCanvas:
     """
 
     def __init__(self, master):
-        self.cv = tk.Canvas(master=master, bg="ivory", bd=0)
+        self.cv = Canvas(master=master, bg="ivory", bd=0)
         self.cv.configure(highlightthickness=0)
         self.cv.bind('<Button-1>', self.onLeftButtonDown)
         self.cv.bind('<B1-Motion>', self.onLeftButtonMove)
         self.cv.bind('<ButtonRelease-1>', self.onLeftButtonUp)
         self.cv.bind('<ButtonRelease-3>', self.onRightButtonUp)
         self.cv.pack(fill='both', expand=True, pady=15, padx=15)
-        self.LButtonState = tk.IntVar(value=0)
-        self.X = tk.IntVar(value=45)
-        self.Y = tk.IntVar(value=self.cv.winfo_height() - 45)
+        self.LButtonState = IntVar(value=0)
+        self.X = IntVar(value=45)
+        self.Y = IntVar(value=self.cv.winfo_height() - 45)
         self.line_num = 0
         self.T = 5
         self.LINE_COLOR = 'black'
@@ -499,21 +505,21 @@ class EntryBox3parts:
         :param font: font-size and font family
         :param memory_max_len:
         """
-        self.basic = tk.Frame(master, bg=BG_COLOUR)
+        self.basic = Frame(master, bg=BG_COLOUR)
         self.basic.pack(side=position, expand=0)
-        self.text = tk.Label(self.basic, text=text2[0], font=font, width=width3[0], bg=BG_COLOUR)
+        self.text = Label(self.basic, text=text2[0], font=font, width=width3[0], bg=BG_COLOUR)
         self.text.pack(side="left", expand=0, padx=5)
-        self.box = ttk.Entry(self.basic, justify="center", font=font, width=width3[1])
+        self.box = ttkEntry(self.basic, justify="center", font=font, width=width3[1])
         self.box.pack(side="left", expand=0, padx=5)
-        _style = ttk.Style()
+        _style = ttkStyle()
         _style.configure("TButton", font=font)
 
-        self.button = ttk.Button(self.basic, text=text2[1], width=width3[2], command=bt_command)
+        self.button = ttkButton(self.basic, text=text2[1], width=width3[2], command=bt_command)
         self.button.pack(side="right", expand=0, padx=5)
         self.box.insert(0, '')
         # 当输入框正在输入时，在下方显示输入记录，并且可以通过鼠标点击记录来输入
         self.box.bind('<KeyRelease>', self.onKeyRelease)
-        self.memory_menu = tk.Menu(self.box, tearoff=0)
+        self.memory_menu = Menu(self.box, tearoff=0)
         self.memory = []
         self.memory_max_len = memory_max_len
 
@@ -544,9 +550,9 @@ class EntryBoxMouseWheel:
     def __init__(self, master, belonging, position, font, width, default,
                  setRange: list, touch_func=None, msWheel_func=None, _queue=None):
         self.get = default
-        EStyle = ttk.Style()
+        EStyle = ttkStyle()
         EStyle.configure('TEntry', borderradius=10)
-        self.box = ttk.Entry(master, justify="center", font=font, width=width, style='TEntry')
+        self.box = ttkEntry(master, justify="center", font=font, width=width, style='TEntry')
         self.box.pack(side=position, expand=0)
         self.box.insert(0, default)
         if _queue:
@@ -607,7 +613,7 @@ class ComboBoxMouseWheel2:
             entry_list.append(default)
             # 将default放在第一个：
             entry_list = [entry_list[-1]] + entry_list[:-1]
-        self.box = ttk.Combobox(master, justify="center", font=font, width=width, values=entry_list)
+        self.box = Combobox(master, justify="center", font=font, width=width, values=entry_list)
         self.box.pack(side=position, expand=False, padx=5, pady=5)
         self.box.insert(0, default)
         self.i = 0
@@ -655,7 +661,7 @@ class ComboBoxMouseWheel2:
 def text_with_combox(master, text, font, text_w, combox_w, combox_list, add_wu=True):
     combox_list = ["无"] + list(combox_list) if add_wu else list(combox_list)
     title(text, BG_COLOUR)(None, master, 'left', font[1], False, text_w, hei=1, padx=0, pady=0)
-    c = ttk.Combobox(master, justify="center", font=(FONT0, font[1]), width=combox_w, values=combox_list)
+    c = Combobox(master, justify="center", font=(FONT0, font[1]), width=combox_w, values=combox_list)
     # 设置默认值
     if combox_list:
         c.current(0)
@@ -671,9 +677,9 @@ class EntryBoxMouseWheel2:
     def __init__(self, master, belonging, position, font, width, default,
                  setRange: list, touch_func=None, msWheel_func=None, _queue=None):
         self.get = default
-        EStyle = ttk.Style()
+        EStyle = ttkStyle()
         EStyle.configure('TEntry', borderradius=10)
-        self.box = ttk.Entry(master, justify="center", font=font, width=width, style='TEntry')
+        self.box = ttkEntry(master, justify="center", font=font, width=width, style='TEntry')
         self.box.pack(side=position, expand=0)
         self.box.insert(0, default)
         if _queue:
@@ -735,11 +741,11 @@ class TextEntryWithMenu:
     def __init__(self, frame, font=('Consolas', 12)):
         # 左边：带滚动条的代码文本编辑器
         self.basic = frame
-        self.text = tk.Text(master=self.basic, bg='ivory', width=70, height=8, font=font)
+        self.text = Text(master=self.basic, bg='ivory', width=70, height=8, font=font)
         TextEntryWithMenu.text = self.text
         self.text.config(spacing3=5)  # 扩大行间距
         self.text.pack(side='left', fill='y', expand=False)
-        self.scroll = tk.Scrollbar(master=self.basic)
+        self.scroll = Scrollbar(master=self.basic)
         self.scroll.pack(side='left', fill='y', expand=False)
         # 将滚动条与代码文本编辑器绑定
         self.scroll.config(command=self.text.yview)
@@ -752,7 +758,7 @@ class TextEntryWithMenu:
         # 检测到内容改变时：保存到撤回栈
         self.text.bind('<Key>', self.save_to_undo_stack)
         # 右键菜单栏：
-        self.menu = tk.Menu(master=self.text, tearoff=0)
+        self.menu = Menu(master=self.text, tearoff=0)
         self.menu.add_command(label='撤回', command=self._undo)
         self.menu.add_command(label='重做', command=self._redo)
         self.menu.add_command(label='清空', command=self.clear)
@@ -774,9 +780,9 @@ class TextEntryWithMenu:
         text = self.text.get('1.0', 'end')
         # 保存到撤回栈
         if not self.undo_stack:
-            self.undo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+            self.undo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
         elif text != self.undo_stack[-1][0]:
-            self.undo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+            self.undo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
             while len(self.undo_stack) > 1000:
                 self.undo_stack.pop(0)
             # print(self.undo_stack)
@@ -790,12 +796,12 @@ class TextEntryWithMenu:
                 self.undo_stack.pop(-1)
             if self.redo_stack:
                 if text != self.redo_stack[-1][0]:
-                    self.redo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+                    self.redo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
             else:
-                self.redo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+                self.redo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
             self.text.delete('1.0', 'end')
             self.text.insert('1.0', self.undo_stack[-1][0])
-            self.text.mark_set(tk.INSERT, self.undo_stack[-1][1])
+            self.text.mark_set(INSERT, self.undo_stack[-1][1])
             self.text.yview_moveto(self.undo_stack[-1][2][0])  # 输入框也要随着滚动条的位置变化而变化
             self.text.update()
             self.undo_stack.pop(-1)
@@ -810,12 +816,12 @@ class TextEntryWithMenu:
         if self.redo_stack:
             if self.undo_stack:
                 if text != self.undo_stack[-1][0]:
-                    self.undo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+                    self.undo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
             else:
-                self.undo_stack.append((text, self.text.index(tk.INSERT), self.scroll.get()))
+                self.undo_stack.append((text, self.text.index(INSERT), self.scroll.get()))
             self.text.delete('1.0', 'end')
             self.text.insert('1.0', self.redo_stack[-1][0])
-            self.text.mark_set(tk.INSERT, self.redo_stack[-1][1])
+            self.text.mark_set(INSERT, self.redo_stack[-1][1])
             self.text.yview_moveto(self.undo_stack[-1][2][0])  # 输入框也要随着滚动条的位置变化而变化
             self.text.update()
             self.redo_stack.pop(-1)
@@ -869,12 +875,12 @@ class CodeEditor(TextEntryWithMenu):
             "# -*- coding: utf-8 -*-\n" \
             "print('Hello World!')"
         # 中间：运行按钮
-        self.button = tk.Button(master=self.basic, text='Run', command=self.run)
+        self.button = Button(master=self.basic, text='Run', command=self.run)
         self.button.pack(side='left', fill="both", padx=8)
         # 右边：带滚动条的显示运行结果的文本框，包括警告和报错信息
-        self.result = tk.Text(master=self.basic, bg='ivory', width=90, height=8, font=("Source Code Pro", 12))
+        self.result = Text(master=self.basic, bg='ivory', width=90, height=8, font=("Source Code Pro", 12))
         # 为右边的文本框添加滚动条
-        self.scroll2 = tk.Scrollbar(master=self.basic)
+        self.scroll2 = Scrollbar(master=self.basic)
         self.scroll2.pack(side='right', fill='y', expand=False)
         self.result.pack(side='left', fill='both', expand=False)
         self.scroll2.config(command=self.result.yview)
@@ -894,7 +900,7 @@ class CodeEditor(TextEntryWithMenu):
             self.default_code
         )
         # 鼠标停止不动时间2s后，显示当前行数：
-        self.line_label = tk.Label(master=self.text, text=' 行数：', bg='white', font=(FONT1, FONT_SIZE))
+        self.line_label = Label(master=self.text, text=' 行数：', bg='white', font=(FONT1, FONT_SIZE))
         self.line_label.config(bd=1, relief='solid', anchor='w')
         self.text.bind('<Motion>', self._show_line)
         self.timer = time.time()
@@ -948,7 +954,7 @@ class MyMenu:
     def __init__(self, basic, menu_labels_funcs):
         # 添加右键菜单
         self.basic = basic
-        self.menu = tk.Menu(basic, tearoff=0)
+        self.menu = Menu(basic, tearoff=0)
         for label in menu_labels_funcs:
             self.menu.add_command(label=label, command=menu_labels_funcs[label])
         basic.bind('<Button-3>', self.popup)
@@ -959,15 +965,16 @@ class MyMenu:
 
 class TempTransparentWin:
     def __init__(self, text_color):
-        self.root = tk.Toplevel(highlightcolor='gray')
+        self.root = Toplevel(highlightcolor='gray')
         self.root.attributes("-transparentcolor", "gray")
-        self.root.attributes("-alpha", 0.01)
         self.root.config(bg='gray')
         # 设置窗口最大化
-        self.root.state('zoomed')
+        width = self.root.winfo_screenwidth() * 4 / 3
+        height = self.root.winfo_screenheight() * 4 / 3
+        self.root.geometry("%dx%d+100+0" % (width, height))
         self.root.wm_attributes("-topmost", True)
         self.root.overrideredirect(True)  # 设置窗口隐藏边框
-        tk.Label(self.root, text='...正在读取图纸...', font=(FONT1, 40), bg='gray', fg=text_color
+        Label(self.root, text='...正在读取图纸...', font=(FONT1, 40), bg='gray', fg=text_color
                  ).pack(expand=True, fill='both', side='top')
         for i in range(1, 17):
             self.root.attributes("-alpha", i / 20)
