@@ -12,11 +12,13 @@ import base64
 import os
 # 项目文件
 from IMGS import *
-from utils_TkGUI import *
-from xml_reader import ReadDesign
-from utils_plot import *
+from utils.TkGUI import *
+from utils.plt_ import *
+from xml_reader import DesignAnalyser, ReadXML, Part, MainWeapon, AA, Funnel, Armor, ArmorBoard, Rebar
+
 
 LOCAL_ADDRESS = os.getcwd()
+REDIRECT = True
 
 
 class MainHandler:
@@ -28,6 +30,7 @@ class MainHandler:
         self.combox.bind('<MouseWheel>', self.combox_update)
         self.last_design = None
         self.DesignReader = None
+        self.Analyser = None
         self.ReadingDesign = False
 
     def combox_update(self, event=None):
@@ -51,12 +54,19 @@ class MainHandler:
                         # 创建临时窗口
                         _win = TempTransparentWin('white')\
                             if GUI.current_Frame == GUI.ShowFrame else TempTransparentWin("black")
-                        del self.DesignReader
-                        # try:
-                        self.DesignReader = ReadDesign(path)
-                        self.DesignReader.read_parts()
-                        self.DesignReader.read_armors()
-                        self.DesignReader.read_rebars()
+                        # 删除上一艘图纸的所有信息
+                        if self.DesignReader is not None:
+                            self.DesignReader.change_ship()
+                            del self.DesignReader
+                            del self.Analyser
+                        # 读取图纸
+                        self.DesignReader = ReadXML(path)
+                        # 获取其他信息
+                        Part.get_all_information()
+                        ArmorBoard.get_all_information()
+                        Rebar.get_all_information()
+                        # 分析部分数据
+                        self.Analyser = DesignAnalyser(self.DesignReader.design)
                         # 更新所有数据
                         GUI.Left.update_treeview()
                         GUI.ShowFrame.update_messages()
@@ -81,7 +91,7 @@ class TkinterGUI:
         self.root.iconphoto(True, self.ICO)
         # notebook
         self.notebook_main = ttk.Notebook(self.root)
-        self.Bottom = BottomFrame(self.root, redirect=True)
+        self.Bottom = BottomFrame(self.root, redirect=REDIRECT)
         self.Left = LeftFrame(self.root)
         # 初始化标签页Frame
         self.Frame_BP = tk.Frame(bg=BG_COLOUR)
@@ -220,9 +230,9 @@ class AnalyseFrame:
         ...
 
     def update_plots(self):
-        DR = Handler.DesignReader
+        ANLS = Handler.Analyser
         self.pie1.pie1(
-            DR.WeightRelation,
+            ANLS.weight_relation_data,
             ["船体", "装甲舱增重", "装甲板", "动力系统", "火炮", "鱼雷", "防空炮", "舰载机增重", "装饰"],
             ['#ffffff', '#ffd6d0', '#ffaa99', '#99ff99', '#ffaaaa', '#aaaaff', '#aaffff', '#eeccff', '#ee00ff']
         )
@@ -328,6 +338,7 @@ class ShowShipFrame:
         更新信息
         :return:
         """
+        ANLS = Handler.Analyser
         DR = Handler.DesignReader
         # 清空信息
         self.canvas.delete('content')
@@ -335,38 +346,15 @@ class ShowShipFrame:
         # 顶部
         try:
             self.canvas.create_text(
-                self.BtPos[0], 60, text=f"{DR.ShipName}", anchor='center', font=(FONT0, 23), fill='white',
+                self.BtPos[0], 60, text=f"{ANLS.ShipName}", anchor='center', font=(FONT0, 23), fill='white',
                 tags=('content',))
             self.canvas.create_text(
-                self.BtPos[0], 115, text=f"设计者:{DR.Designer}", anchor='center', font=(FONT0, 18), fill='white',
+                self.BtPos[0], 115, text=f"设计者:{ANLS.Designer}", anchor='center', font=(FONT0, 18), fill='white',
                 tags=('content',))
         except AttributeError:
             return
         # 中间
-        insert = {
-            "left": [
-                f"{DR.Displacement_in_t} 吨",
-                f"{DR.Length_in_m} 米",
-                f"{DR.Height_in_m} 米",
-                f"{DR.Power} 米制马力",
-                f"{DR.ViewRange} 米",
-                f"{DR.MainWeapon} 毫米",
-                f"{DR.MainArmor} 毫米",
-                DR.Ammo,
-                f"{DR.Price} 资源点"
-            ],
-            "right": [
-                f"{DR.Volume_in_m} 立方米",
-                f"{DR.Width_in_m} 米",
-                f"{DR.Draft_in_m} 米",
-                DR.Drag,
-                f"{DR.Concealment} %",
-                f"{DR.Range} 米",
-                DR.AA,
-                DR.Aircraft,
-                f"{round(DR.SpendTime / 3600, 1)} 小时"
-            ]
-        }
+        insert = ANLS.right_frame0_data
         _W = 570
         for i in range(len(insert["left"])):  # 左边
             _H = self.StartH + self.LineH * i
@@ -377,7 +365,7 @@ class ShowShipFrame:
                 800 + _W, _H, text=insert["right"][i], anchor='se', font=(FONT0, 15), fill='white',
                 tags=("content", "values"))
         # 插入介绍
-        text = DR.Introduction
+        text = DR.design["CopyWriting"]
         text = self.text_wrap(text)
         # 获取行数
         lines = text.count('\n') + 1
@@ -456,7 +444,7 @@ class LeftFrame:
             ('长宽吃水比', ''),
             ('方形系数', ''),
             ('装甲板重量', ''),
-            ('装甲舱加重', ''),
+            ('装甲舱增重', ''),
             ('火炮重量', ''),
             ('排烟器种类', ''),
             ('轮机数量', ''),
@@ -489,8 +477,13 @@ class LeftFrame:
             "长宽吃水比": "长宽吃水比：\n战舰的长度与宽度的比值.前值越大，说明该设计的船体越细长，战舰越容易获得高速，但转向性能越差。",
             "方形系数": "方形系数：\n战舰的排水体积与水线下战舰方形体积的比值。该值越小，说明该设计的船体越扁平，战舰越容易获得高速，但稳定性越差。",
             "装甲板重量": "装甲板重量：\n战舰的装甲板总重量(吨)",
-            "装甲舱加重": "装甲舱重量(皮重)：\n战舰的装甲舱总重量(吨)减相等体积的船体重量。",
+            "装甲舱增重": "装甲舱重量(皮重)：\n战舰的装甲舱总重量(吨)减相等体积的船体重量。",
             "火炮重量": "火炮重量：\n战舰的火炮总重量(吨)\n这里的火炮不包括防空炮和鱼雷发射器。",
+            "排烟器种类": "排烟器种类：\n战舰的排烟器种类。",
+            "轮机数量": "轮机数量：\n战舰的轮机数量。",
+            "轮机重量": "轮机重量：\n战舰的轮机总重量(吨)",
+            "推重比": "推重比：\n战舰的推重比，即战舰的推进力与战舰的总重量的比值。一般该值越大，说明该战舰越容易获得高速。"
+
         }
         messagebox.showinfo('详细信息', text[item[0]])
 
@@ -499,52 +492,9 @@ class LeftFrame:
         更新treeview
         :return:
         """
-        DR = Handler.DesignReader
-        turbine_names = ''
-        turbine_num = 0
-        turbine_weight = 0
-        # 初步处理部分数据
-        if len(DR.Turbines) == 0:
-            pass
-        elif len(DR.Turbines) == 1:
-            turbine_names = DR.Turbines[0][0]
-            turbine_num = int(
-                DR.Turbines[0][1]["单烟轮机数量"].split(' × ')[0]
-            ) * int(
-                DR.Turbines[0][1]["单烟轮机数量"].split(' × ')[1]
-            )
-            turbine_weight = DR.Turbines[0][1]["单烟轮机重量"]
-        else:
-            for i in DR.Turbines:
-                turbine_names += i[0] + ' '
-                turbine_num += int(
-                    i[1]["单烟轮机数量"].split(' × ')[0]
-                ) * int(
-                    i[1]["单烟轮机数量"].split(' × ')[1]
-                )
-                turbine_weight += i[1]["单烟轮机重量"]
-        if not DR:
-            return
-        # 直接修改treeview的值
-        datas = [
-            DR.DesignerID,
-            DR.Type,
-            str(DR.weight_ratio),
-            str(DR.Len_Wid_Dra),
-            str(DR.SquareCoefficient),
-            f"{DR.armorboards_weight} t",
-            f"{DR.parts_weight['装甲舱增重']} t",
-            f"{DR.parts_weight['火炮']} t",
-            turbine_names,
-            turbine_num,
-            f"{turbine_weight} t",
-            f"{round(DR.HP / DR.Displacement_in_t, 3)}"
-        ]
-        try:
-            for i in range(len(datas)):
-                self.tree.set(f'I00{self.index2sixteen(i)}', 'value', datas[i])
-        except AttributeError:
-            pass
+        _data = list(Handler.Analyser.left_frame_data.values())
+        for i in range(len(_data)):
+            self.tree.set(f'I00{self.index2sixteen(i)}', 'value', _data[i])
 
     @staticmethod
     def index2sixteen(index):

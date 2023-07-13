@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import ttk
 from win32com.client import Dispatch
 
-import PROGRAM
+import Data.PROGRAM as PROGRAM
 
 
 def find_ptb():
