@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import ttk
 from win32com.client import Dispatch
 
-import Data.PROGRAM as PROGRAM
+import PROGRAM
 
 
 def find_ptb():
@@ -99,16 +99,19 @@ def start():
 
 def check_whether_installed():
     global PATH
-    # 在安装路径下寻找PTB-BlueprintReader.exe
+    # # 在安装路径下寻找PTB-BlueprintReader.exe
+    # if os.path.isfile(os.path.join(PATH, 'PTB-BlueprintReader.exe')):
+    #     # 检查是否和当前版本一致
+    #     with open(os.path.join(PATH, 'PTB-BlueprintReader.exe'), 'rb') as f2:
+    #         if f2.read() == base64.b64decode(PROGRAM.PGM):
+    #             # 一致，不需要安装
+    #             return True
+    #         else:
+    #             # 不一致，需要重新安装
+    #             return False
     if os.path.isfile(os.path.join(PATH, 'PTB-BlueprintReader.exe')):
-        # 检查是否和当前版本一致
-        with open(os.path.join(PATH, 'PTB-BlueprintReader.exe'), 'rb') as f2:
-            if f2.read() == base64.b64decode(PROGRAM.PGM):
-                # 一致，不需要安装
-                return True
-            else:
-                # 不一致，需要重新安装
-                return False
+        os.remove(os.path.join(PATH, 'PTB-BlueprintReader.exe'))
+    return False
 
 
 if __name__ == '__main__':

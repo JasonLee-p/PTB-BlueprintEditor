@@ -33,7 +33,8 @@ class Part:
         :param color: 零件颜色（tuple）
         """
         # --------------------------------------基础信息-------------------------------------- #
-        if Id[0] in NUM_STRS:  # 如果是Id
+        self.Id = Id
+        if self.Id[0] in NUM_STRS:  # 如果是Id
             self.ID = self._id2name(Id)
         else:  # 如果是名称
             self.ID = Id
@@ -255,19 +256,30 @@ class MainWeapon(Part):
                     MainWeaponsData[self.ID][-2]
                 )
                 self.RecommendedNum = MainWeaponsData[self.ID][-1]
-                self.FireRate = self.ShellWeight * self.Multi / (self.ReloadTime / 60)  # 投射量（kg/min）
-                self.FireRate_per_Magazine = self.FireRate / self.Magazine
+                self.FireRate = round(self.ShellWeight * self.Multi * (60 / self.ReloadTime), 2)  # 投射量（kg/min）
+                self.FireRate_per_Magazine = round(self.FireRate / self.Magazine, 2)
+                if self.FireRate_per_Magazine > 1200:
+                    print(self.FireRate_per_Magazine)
+                    print(f"警告：武器{self.ID}的单位弹药库投射量超出了范围，可能是数据错误。")
+                    raise Warning
+                if self.FireRate > 12000:
+                    print(self.FireRate)
+                    print(f"警告：武器{self.ID}的投射量超出了范围，可能是数据错误。")
+                    raise Warning
+
                 # --------------------------------------计算信息-------------------------------------- #
                 MainWeapon.TotalFireRate += self.FireRate
             except KeyError:
                 print(f"未找到武器{self.ID}的数据，武器投射量的相关数据将会不准确。")
+                self.FireRate = 0
+                self.FireRate_per_Magazine = 0
             MainWeapon.Gun.append(self)
             # --------------------------------------计算信息-------------------------------------- #
             MainWeapon.GunTotalWeight += self.Weight
             MainWeapon.TotalNeedMagazines += self.Magazine
             MainWeapon.GunNeedMagazines += self.Magazine
 
-        else:  # self.ID[1] == "雷":
+        elif self.ID[1] == "雷":
             self.Caliber = {"美": 533, "日": 610, "德": 533}[self.ID[0]]
             self.Multi = int(self.ID[2])
             self.Magazine = self.Multi
@@ -319,7 +331,7 @@ class AA(Part):
         super().__init__(Id, name, weight, buoyancy, rotation, position, scale, color)
         self.Caliber = int(self.ID[3:5])
         self.Multi = int(self.ID[6])
-        self.Magazine = round(float(self.Caliber**2 / 10000) * self.Multi, 3)
+        self.Magazine = round(float(self.Caliber ** 2 / 10000) * self.Multi, 3)
         AA.aas.append(self)
         AA.total_weight += self.Weight
         AA.NeedMagazines += self.Magazine
@@ -467,6 +479,182 @@ class Rebar:
         pass
 
 
+class AdvancedHull:
+    currentHull = None
+
+    def __init__(
+            self, ship_name, position: Tuple[float], dock, rail, waterLineHeight,
+            hullColor, waterLineColor,
+            slices_dict
+    ):
+        self.ShipName = ship_name
+        self.Position = position
+        self.Dock = dock
+        self.Rail = rail
+        self.WaterLineHeight = waterLineHeight
+        self.HullColor = hullColor
+        self.WaterLineColor = waterLineColor
+        self.Slices = slices_dict
+        # --------------------------------------计算信息-------------------------------------- #
+        self.SlicesPoints = {}
+        # SlicePoints 键值对是：分段名称 和 节点集合，其中节点先从前到后遍历左边再从前到后遍历右边，方向一致。
+        for key, value in self.Slices.items():
+            add_list = []
+            for _i in value["points"]:
+                add_list.append((float(value['pos']), float(_i[0]), float(_i[1])))
+            # 另一半
+            for _i in value["points"]:
+                add_list.append((float(value['pos']), -float(_i[0]), float(_i[1])))
+            self.SlicesPoints[key] = add_list
+        # print(self.SlicesPoints)
+        AdvancedHull.currentHull = self
+
+    @classmethod
+    def change_ship(cls):
+        del cls.currentHull
+        cls.currentHull = None
+
+
+class SplitAdHull(AdvancedHull):
+    def __init__(
+            self, ship_name, position, dock, rail, waterLineHeight,
+            hullColor, waterLineColor,
+            slices_dict,
+            change_pos=False
+    ):
+        super().__init__(
+            ship_name, position, dock, rail, waterLineHeight,
+            hullColor, waterLineColor,
+            slices_dict
+        )
+        self.change_pos = change_pos
+        # 交换点坐标的顺序
+        if change_pos:
+            self.change_position2NA()
+        # SlicePoints 键值对是：分段名称 和 节点集合，其中节点先从前到后遍历左边再从前到后遍历右边，方向一致。
+        self.SlicesPoints_half = {}  # 前一半
+        for key, value in self.SlicesPoints.items():
+            self.SlicesPoints_half[key] = value[:len(value) // 2]
+        # 初始化所有y,z值
+        self.y_list = []
+        self.z_list = []
+        # 范围
+        self.x_range, self.y_range, self.z_range = self.get_range()
+
+    def change_position2NA(self):
+        for key, value in self.SlicesPoints.items():
+            for i in range(len(value)):
+                # x, y, z = z, y, x
+                # 如果要显示，则z应该是1，y是2，x是0
+                # 如果是Navalart，z应该是0，y是1，x是2
+                # 如果是PTB，z应该是2，y是0，x是1
+                # 1, 2, 0
+                value[i] = (value[i][1], value[i][2], value[i][0])
+
+    def change_position2PTB(self):
+        for key, value in self.SlicesPoints.items():
+            for i in range(len(value)):
+                # x, y, z = z, y, x
+                # 如果要显示，则z应该是1，y是2，x是0
+                # 如果是Navalart，z应该是0，y是1，x是2
+                # 如果是PTB，z应该是2，y是0，x是1
+                # 0, 2, 1
+                value[i] = (value[i][0], value[i][2], value[i][1])
+
+    def get_range(self):
+        x_range = []
+        y_range = []
+        z_range = []
+        for key, value in self.SlicesPoints.items():
+            for dot in value:
+                x_range.append(dot[0])
+                y_range.append(dot[1])
+                z_range.append(dot[2])
+                self.y_list.append(dot[1])
+                self.z_list.append(dot[2])
+        x_range = (min(x_range), max(x_range))
+        y_range = (min(y_range), max(y_range))
+        z_range = (min(z_range), max(z_range))
+        self.y_list.sort()
+        self.z_list.sort()
+        return x_range, y_range, z_range
+
+    def get_xz_from_y(self, y):
+        """
+        根据y值获取xz值，注意只有左边的点
+        :param y:
+        :return:
+        """
+        xz = []
+        if y < self.y_range[0] or y > self.y_range[1]:
+            raise ValueError('y超出范围')
+        for key, value in self.SlicesPoints.items():
+            value_left = value[:len(value) // 2]
+            for i in range(len(value_left) - 1):
+                if value_left[i][1] <= y <= value_left[i + 1][1] or value_left[i][1] >= y >= value_left[i + 1][1]:
+                    # 计算x
+                    x = value_left[i][0] + (value_left[i + 1][0] - value_left[i][0]) * (
+                            y - value_left[i][1]) / (value_left[i + 1][1] - value_left[i][1])
+                    # 计算z
+                    z = value_left[i][2] + (value_left[i + 1][2] - value_left[i][2]) * (
+                            y - value_left[i][1]) / (value_left[i + 1][1] - value_left[i][1])
+                    xz.append((x, z))
+        return xz
+
+    def get_plane_dots(self):
+        # 当有多个点有相同的y值时，把这些点收集起来
+        y_dict = {}
+        result_y_dict = {}
+        for y in self.y_list:
+            try:
+                y_dict[y] += 1
+            except KeyError:
+                y_dict[y] = 1
+        # 删除只有一个点的y值
+        for plane_y, value in y_dict.items():
+            if value != 2:
+                _list = []
+                for _, _value in self.SlicesPoints_half.items():
+                    for dot in _value:
+                        if dot[1] == plane_y:
+                            if _list and abs(dot[2] - _list[-1][2]) > 0.1:
+                                _list.append(dot)
+                            elif not _list:
+                                _list.append(dot)
+                _list.sort(key=lambda x: x[2])
+                result_y_dict[plane_y] = _list
+        # 清除长度小于2的
+        result_y_dict = {key: value for key, value in result_y_dict.items() if len(value) > 1}
+        # 如果z值之间有其他的Z值，就把这个点删除
+        for plane_y, value in result_y_dict.items():
+            _value = value.copy()
+            for i in range(len(value) - 1):
+                for _z in self.z_list:
+                    if value[i][2] < _z < value[i + 1][2]:
+                        _value[i] = None
+            _value = [i for i in _value if i]
+            result_y_dict[plane_y] = _value
+        # 清除长度小于2的
+        result_y_dict = {key: value for key, value in result_y_dict.items() if len(value) > 1}
+        return result_y_dict
+
+    def find_bottom(self, shift=0.1):
+        """
+        找到底部截取点
+        :return:
+        """
+        start, end = self.y_range
+        max_width = self.x_range[1] - self.x_range[0]
+        times = (self.y_range[1] - self.y_range[0])/shift
+        for i in range(int(times)):
+            y = start + shift * i
+            xz = self.get_xz_from_y(y)
+            width = xz[-1][0] - xz[0][0]
+            if width > max_width:
+                max_width = width
+                end = y
+
+
 class ReadXML:
     """
     读取XML文件，把数据分别存放到各个类里分别使用
@@ -507,138 +695,67 @@ class ReadXML:
     def get_parts(self):
         # 初始化result
         result = {category: [] for category in category_mapping.keys()}
-        for part in self.root[1].findall('part'):  # 遍历所有的零件
-            if part.attrib["Name"] == "Main_Weapon" or part.attrib["Name"] == "Torpedo":
-                MW = MainWeapon(  # -------------------------------------------------------------初始化MainWeapon
-                    part.attrib['Id'],  # Id
-                    part.attrib['Name'],  # Name
-                    str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-                    part.attrib['buoyancy'],  # Buoyancy
-                    (
-                        int(part.find("Rotation").attrib['RotX']),  # Rotation
-                        int(part.find("Rotation").attrib['RotY']),
-                        int(part.find("Rotation").attrib['RotZ'])
-                    ), (
-                        round(str2float(part.find("position").attrib['posX']), 1),  # Position
-                        round(str2float(part.find("position").attrib['posY']), 1),
-                        round(str2float(part.find("position").attrib['posZ']), 1)
-                    ), (
-                        str2float(part.find("scale").attrib['ScaX']),  # Scale
-                        str2float(part.find("scale").attrib['ScaY']),
-                        str2float(part.find("scale").attrib['ScaZ'])
-                    ), (
-                        int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-                        int(256 * str2float(part.find("Color").attrib['ColorG'])),
-                        int(256 * str2float(part.find("Color").attrib['ColorB']))
-                    ),
-                    part.find('WeaponAimArea') if not part.find('WeaponAimArea') else part.find('WeaponAimArea').attrib,  # WeaponAimArea
+        for part in self.root.find('parts').findall('part'):  # 遍历所有的零件
+            try:
+                name = part.attrib['Name']
+            except KeyError:
+                name = ""
+            try:
+                weight = str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER
+            except KeyError:
+                weight = 0
+            try:
+                buoyancy = part.attrib['buoyancy']
+            except KeyError:
+                buoyancy = 0
+            try:
+                rotation = (
+                    int(part.find("Rotation").attrib['RotX']),
+                    int(part.find("Rotation").attrib['RotY']),
+                    int(part.find("Rotation").attrib['RotZ'])
                 )
+                position = (
+                    round(str2float(part.find("position").attrib['posX']), 1),
+                    round(str2float(part.find("position").attrib['posY']), 1),
+                    round(str2float(part.find("position").attrib['posZ']), 1)
+                )
+                scale = (
+                    str2float(part.find("scale").attrib['ScaX']),
+                    str2float(part.find("scale").attrib['ScaY']),
+                    str2float(part.find("scale").attrib['ScaZ'])
+                )
+                color = (
+                    int(256 * str2float(part.find("Color").attrib['ColorR'])),
+                    int(256 * str2float(part.find("Color").attrib['ColorG'])),
+                    int(256 * str2float(part.find("Color").attrib['ColorB']))
+                )
+            except KeyError and AttributeError:
+                rotation = (None, None, None)
+                position = (None, None, None)
+                scale = (None, None, None)
+                color = (None, None, None)
+            if '110' in part.attrib["Id"][:3] or '113' in part.attrib["Id"][:3]:  # -------------------初始化火炮
+                MW = MainWeapon(part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color,
+                                part.find('WeaponAimArea') if not part.find('WeaponAimArea') else part.find(
+                                    'WeaponAimArea').attrib)
                 if MW.Name == "Torpedo":
                     result['鱼雷'].append(MW)
                 else:
                     result['火炮'].append(MW)
             elif part.find('turbine') is not None:
-                Fn = Funnel(  # -----------------------------------------------------------------------初始化Funnel
-                    part.attrib['Id'],  # Id
-                    part.attrib['Name'],  # Name
-                    str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-                    part.attrib['buoyancy'],  # Buoyancy
-                    (
-                        int(part.find("Rotation").attrib['RotX']),  # Rotation
-                        int(part.find("Rotation").attrib['RotY']),
-                        int(part.find("Rotation").attrib['RotZ'])
-                    ), (
-                        round(str2float(part.find("position").attrib['posX']), 1),  # Position
-                        round(str2float(part.find("position").attrib['posY']), 1),
-                        round(str2float(part.find("position").attrib['posZ']), 1)
-                    ), (
-                        str2float(part.find("scale").attrib['ScaX']),  # Scale
-                        str2float(part.find("scale").attrib['ScaY']),
-                        str2float(part.find("scale").attrib['ScaZ'])
-                    ), (
-                        int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-                        int(256 * str2float(part.find("Color").attrib['ColorG'])),
-                        int(256 * str2float(part.find("Color").attrib['ColorB']))
-                    ), (
-                        int(part.find('turbine').attrib["countX"]),  # turbine num
-                        int(part.find('turbine').attrib["countY"])
-                    )
-                )
+                Fn = Funnel(part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color, (
+                    int(part.find('turbine').attrib["countX"]), int(part.find('turbine').attrib["countY"])
+                ))
                 result['排烟器'].append(Fn)
-            elif part.attrib['Name'] == "AA":
-                AA_ = AA(  # ---------------------------------------------------------------------------初始化AA
-                    part.attrib['Id'],  # Id
-                    part.attrib['Name'],  # Name
-                    str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-                    part.attrib['buoyancy'],  # Buoyancy
-                    (
-                        int(part.find("Rotation").attrib['RotX']),  # Rotation
-                        int(part.find("Rotation").attrib['RotY']),
-                        int(part.find("Rotation").attrib['RotZ'])
-                    ), (
-                        round(str2float(part.find("position").attrib['posX']), 1),  # Position
-                        round(str2float(part.find("position").attrib['posY']), 1),
-                        round(str2float(part.find("position").attrib['posZ']), 1)
-                    ), (
-                        str2float(part.find("scale").attrib['ScaX']),  # Scale
-                        str2float(part.find("scale").attrib['ScaY']),
-                        str2float(part.find("scale").attrib['ScaZ'])
-                    ), (
-                        int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-                        int(256 * str2float(part.find("Color").attrib['ColorG'])),
-                        int(256 * str2float(part.find("Color").attrib['ColorB']))
-                    ),
-                )
+            elif '112' in part.attrib["Id"][:3]:  # --------------------------------------------------初始化AA
+                AA_ = AA(part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color)
                 result['防空炮'].append(AA_)
-            elif "装甲舱" in Part.id2name(part.attrib['Id']):
-                Armor_ = Armor(  # --------------------------------------------------------------------初始化Armor
-                    part.attrib['Id'],  # Id
-                    part.attrib['Name'],  # Name
-                    str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-                    part.attrib['buoyancy'],  # Buoyancy
-                    (
-                        int(part.find("Rotation").attrib['RotX']),  # Rotation
-                        int(part.find("Rotation").attrib['RotY']),
-                        int(part.find("Rotation").attrib['RotZ'])
-                    ), (
-                        round(str2float(part.find("position").attrib['posX']), 1),  # Position
-                        round(str2float(part.find("position").attrib['posY']), 1),
-                        round(str2float(part.find("position").attrib['posZ']), 1)
-                    ), (
-                        str2float(part.find("scale").attrib['ScaX']),  # Scale
-                        str2float(part.find("scale").attrib['ScaY']),
-                        str2float(part.find("scale").attrib['ScaZ'])
-                    ), (
-                        int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-                        int(256 * str2float(part.find("Color").attrib['ColorG'])),
-                        int(256 * str2float(part.find("Color").attrib['ColorB']))
-                    ),
-                )
+            elif "装甲舱" in Part.id2name(part.attrib['Id']):  # --------------------------------------初始化装甲舱
+                Armor_ = Armor(part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color)
                 result['装甲舱'].append(Armor_)
             else:
                 P = Part(  # ------------------------------------------------------------------------初始化Part
-                    part.attrib['Id'],  # Id
-                    part.attrib['Name'],  # Name
-                    str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-                    part.attrib['buoyancy'],  # Buoyancy
-                    (
-                        int(part.find("Rotation").attrib['RotX']),  # Rotation
-                        int(part.find("Rotation").attrib['RotY']),
-                        int(part.find("Rotation").attrib['RotZ'])
-                    ), (
-                        round(str2float(part.find("position").attrib['posX']), 1),  # Position
-                        round(str2float(part.find("position").attrib['posY']), 1),
-                        round(str2float(part.find("position").attrib['posZ']), 1)
-                    ), (
-                        str2float(part.find("scale").attrib['ScaX']),  # Scale
-                        str2float(part.find("scale").attrib['ScaY']),
-                        str2float(part.find("scale").attrib['ScaZ'])
-                    ), (
-                        int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-                        int(256 * str2float(part.find("Color").attrib['ColorG'])),
-                        int(256 * str2float(part.find("Color").attrib['ColorB']))
-                    ),
-                )
+                    part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color)
                 # 对零件进行分类装入result，通过mapping来匹配
                 added_to_category = False  # 是否被添加到result中
                 for category, part_names in category_mapping.items():
@@ -666,6 +783,8 @@ class ReadXML:
     def get_ShipCard(self):
         result = {}
         ShipCard = self.root.find('ShipCard')
+        if ShipCard is None:
+            return result
         result['Designer'] = ShipCard.find('Designer').attrib['Value']
         result['ShipName'] = ShipCard.find('ShipName').attrib['Value']
         result['Length'] = str2float(ShipCard.find('Length').attrib['Value'])
@@ -676,7 +795,7 @@ class ReadXML:
         result['Displacement'] = str2float(ShipCard.find('Displacement').attrib['Value'])
         result['Drag'] = str2float(ShipCard.find('Drag').attrib['Value'])
         result['Range'] = int(ShipCard.find('Range').attrib['Value'])
-        result['Power'] = int(ShipCard.find('HP').attrib['Value'])
+        result['Power'] = round(float(ShipCard.find('HP').attrib['Value']), 1)
         result['MainWeapon'] = int(ShipCard.find('MainWeapon').attrib['Value'])
         result['MainArmor'] = int(str2float(ShipCard.find('MainArmor').attrib['Value']))
         result['SpendTime'] = str2float(ShipCard.find('SpendTime').attrib['Value'])
@@ -705,7 +824,10 @@ class ReadXML:
         return result
 
     def get_CopyWriting(self):
-        return self.root.find('CopyWriting').attrib['Text']
+        try:
+            return self.root.find('CopyWriting').attrib['Text']
+        except AttributeError:
+            return ''
 
     def get_Collaborators(self):
         try:
@@ -742,22 +864,30 @@ class ReadXML:
         _abs = self.root.find("armorboards")
         if not _abs:
             return result
-        for armor in _abs.findall('armorboard'):
-            A = ArmorBoard(
-                armor.attrib['name'],
-                int(1000 * str2float(armor.attrib['sizeZ'])),
-                (int(armor.attrib['sizeX']), int(armor.attrib['sizeY'])),
-                (armor.attrib['posXen'], armor.attrib['posYen'], armor.attrib['posZen']),
-                (armor.attrib['rotXen'], armor.attrib['rotYen'], armor.attrib['rotZen']),
-                (
-                    int(256 * str2float(armor.attrib['colR'])),
-                    int(256 * str2float(armor.attrib['colG'])),
-                    int(256 * str2float(armor.attrib['colB']))
-                ),
-                int(armor.attrib['count']),
-                int(armor.attrib['cost']),
-                int(armor.attrib['time'])
-            )
+        for armor_b in _abs.findall('armorboard'):
+            try:
+                position = (armor_b.attrib['posXen'], armor_b.attrib['posYen'], armor_b.attrib['posZen'])
+                rotation = (armor_b.attrib['rotXen'], armor_b.attrib['rotYen'], armor_b.attrib['rotZen'])
+            except KeyError:
+                position = (armor_b.attrib['posX'], armor_b.attrib['posY'], armor_b.attrib['posZ'])
+                rotation = (armor_b.attrib['rotX'], armor_b.attrib['rotY'], armor_b.attrib['rotZ'])
+            try:
+                color = (int(256 * str2float(armor_b.attrib['colR'])),
+                         int(256 * str2float(armor_b.attrib['colG'])),
+                         int(256 * str2float(armor_b.attrib['colB'])))
+            except KeyError:
+                color = (None, None, None)
+            try:
+                count = int(armor_b.attrib['count'])
+                cost = int(armor_b.attrib['cost'])
+                time = int(armor_b.attrib['time'])
+            except KeyError:
+                count = "未知"
+                cost = "未知"
+                time = "未知"
+            A = ArmorBoard(armor_b.attrib['name'], int(1000 * str2float(armor_b.attrib['sizeZ'])),
+                           (int(armor_b.attrib['sizeX']), int(armor_b.attrib['sizeY'])),
+                           position, rotation, color, count, cost, time)
             result.append(A)
         return result
 
@@ -770,7 +900,36 @@ class ReadXML:
         return result
 
     def get_adHull(self):
-        result = {}
+        try:
+            adHull_attr = self.root.find('adHull').attrib
+            adHull_all = self.root.find('adHull').findall('slice')
+        except AttributeError:
+            return None
+        slice_dict = {}
+        ii = 0
+        for slice_ in adHull_all:
+            slice_dict[f"{slice_.attrib['name']}{ii}"] = {
+                "pos": float(slice_.attrib['pos']),
+                "dock": slice_.attrib['dock'],
+                "rail": slice_.attrib['rail'],
+                "points": [(float(d.attrib["x"]), float(d.attrib["y"])) for d in slice_.findall('point')]
+            }
+            ii += 1
+        AdH = SplitAdHull(
+            self.root.find('ShipInfo').attrib['ShipName'],
+            (float(adHull_attr['posX']), float(adHull_attr['posY']), float(adHull_attr['posZ'])),
+            int(adHull_attr['dock']),
+            adHull_attr['rail'],
+            adHull_attr['waterLineHeight'],
+            (float(adHull_attr['hullColorR']), float(adHull_attr['hullColorG']), float(adHull_attr['hullColorB'])),
+            (
+                float(adHull_attr['waterLineColorR']),
+                float(adHull_attr['waterLineColorG']),
+                float(adHull_attr['waterLineColorB'])
+            ),
+            slice_dict
+        )
+        result = AdH
         return result
 
     @staticmethod
@@ -806,9 +965,11 @@ class ReadXML:
         Part.change_ship()
         ArmorBoard.change_ship()
         Rebar.change_ship()
+        AdvancedHull.change_ship()
 
 
 class DesignAnalyser:
+
     def __init__(self, DR_dict):
         """
 
@@ -824,6 +985,8 @@ class DesignAnalyser:
         self.Concealment = 0  # TODO:隐蔽能力
         # Introduction-------------------------------------------------------------------------Introduction
         # ShipCard-------------------------------------------------------------------------ShipCard
+        if DR_dict['ShipCard'] == {}:
+            return
         ShipCard = DR_dict['ShipCard']
         # ShipCard原始数据
         self.Designer = ShipCard['Designer']
@@ -843,7 +1006,7 @@ class DesignAnalyser:
         self.Len_Wid_Dra = f"{self.Len_Wid}—1—{self.Dra_Wid}"
         self.Ammo = f"需求 {ShipCard['MagazineSupply']} 供给 {ShipCard['MagazineNeed']}"
         self.DisplacementVolume_ratio = round(self.Displacement / self.Volume, 2)
-        self.BlockEfficiency = round(self.Displacement / (self.Length * self.Width * self.Height), 3)
+        self.BlockEfficiency = round(self.Displacement / (self.Length * self.Width * self.Draft), 3)
         self.Power = ShipCard['Power']
 
         # 对零件的统计计算
@@ -912,6 +1075,13 @@ class DesignAnalyser:
             "防空耗弹": AA.NeedMagazines,
         }
 
+        self.right_frame0_data2 = {}
+        for mw_ in MainWeapon.Gun:
+            self.right_frame0_data2[mw_.ID] = mw_.FireRate_per_Magazine
+        self.right_frame0_data3 = {}
+        for mw_ in MainWeapon.Gun:
+            self.right_frame0_data3[mw_.ID] = mw_.FireRate
+
     def showed_turbine_names(self):
         # 初步处理部分数据
         if len(Funnel.funnels) == 0:  # 没有排烟器
@@ -941,402 +1111,6 @@ class DesignAnalyser:
             self.turbine_nums = Funnel.TurbinesNum
 
 
-# class ReadDesign:
-#     def __init__(self, path):
-#         self.path = path
-#         # 读取xml形式的图纸：
-#         self._tree = ET.parse(self.path)
-#         self.root = self._tree.getroot()
-#         # ShipInfo
-#         self.ShipInfo = self.root.find('ShipInfo')
-#         self.ShipName = self.ShipInfo.attrib['ShipName']
-#         self.AllParts = []
-#         self.Introduction = self.root.find('CopyWriting').attrib['Text']
-#         self.HP = int(self.ShipInfo.attrib['HP'])  # 推进功率
-#         self.weight = str2float(self.ShipInfo.attrib['weight'])
-#         self.TotalBuoyancy = str2float(self.ShipInfo.attrib['TotalBuoyancy'])
-#         # 所有部件初始化
-#         self.Parts = None  # 所有零件
-#         self.WeightRelation = None  # 零件重量关系
-#         self.parts_weight = {}  # 零件重量
-#         self.ArmorBoards = None  # 装甲板
-#         self.armorboards_weight = 0  # 装甲板重量
-#         self.Turbines = []  # 涡轮
-#         self.turbines_weight = 0  # 涡轮重量
-#         self.Rebars = None  # 钢筋
-#         self.AirFixs = None  # 空气固定器
-#         self.Power = None  # 功率
-#         self.armor2hull_weight = 0  # 装甲舱换算成船体的重量
-#         self.aircraft_added_weight = 0  # 机库换算成船体的重量
-#         self.WeaponsMagazines = []  # 所有武器的消耗弹药库信息
-#         self.WeaponsMagazinesRelation = None  # 武器弹药库关系
-#         # CP
-#         try:
-#             self.CP = int(self.ShipInfo.attrib['CP'])
-#             self.SecurityCode = self.ShipInfo.attrib['SecurityCode']
-#         except KeyError:
-#             self.CP = None
-#             self.SecurityCode = None
-#         try:
-#             # ShipType
-#             self.ShipType = self.root.find('ShipType')
-#             self.Type = self.ShipType.attrib['type']
-#             self.efficiency = str2float(self.ShipType.attrib['efficiency'])
-#             self.CheckCode1 = self.ShipType.attrib['checkCode']
-#             # CheakCode
-#             self.CheakCode = self.root.find('CheakCode')
-#             self.DesignerID = self.CheakCode.attrib['Designer']
-#             self.DesignTimeID = self.CheakCode.attrib['DesignTime']
-#             self.CheckCode2 = self.CheakCode.attrib['Code']
-#         except AttributeError:
-#             self.ShipType = None
-#             self.Type = None
-#             self.efficiency = None
-#             self.CheckCode1 = None
-#             self.CheakCode = None
-#             self.DesignerID = None
-#             self.DesignTimeID = None
-#             self.CheckCode2 = None
-#         # ________________________________________________________________________________ShipCard
-#         self.ShipCard = self.root.find('ShipCard')
-#         self.Designer = self.ShipCard.find('Designer').attrib['Value']
-#         self.Length = str2float(self.ShipCard.find('Length').attrib['Value'])
-#         self.Width = str2float(self.ShipCard.find('Width').attrib['Value'])
-#         self.Height = str2float(self.ShipCard.find('Height').attrib['Value'])
-#         self.Draft = str2float(self.ShipCard.find('Draft').attrib['Value'])
-#         self.Volume = str2float(self.ShipCard.find('Volume').attrib['Value'])
-#         self.Displacement = str2float(self.ShipCard.find('Displacement').attrib['Value'])
-#         self.Length_in_m = round(3 * self.Length, 3)
-#         self.Width_in_m = round(3 * self.Width, 3)
-#         self.Height_in_m = round(3 * self.Height, 3)
-#         self.Draft_in_m = round(3 * self.Draft, 3)
-#         self.Len_Wid = round(self.Length / self.Width, 2)
-#         self.Dra_Wid = round(self.Draft / self.Width, 2)
-#         self.Len_Wid_Dra = f"{self.Len_Wid}  :1  :{self.Dra_Wid}"
-#         self.Volume_in_m = round(27 * self.Volume, 3)
-#         self.Displacement_in_t = round(27 * self.Displacement, 3)
-#         self.Drag = str2float(self.ShipCard.find('Drag').attrib['Value'])
-#         self.Range = int(self.ShipCard.find('Range').attrib['Value'])
-#         self.Power = int(self.ShipCard.find('HP').attrib['Value'])
-#         self.ViewRange = 0  # TODO:视野
-#         self.Concealment = 0  # TODO:隐蔽能力
-#         # 弹药供给
-#         try:
-#             self.AmmoSupply = int(self.ShipCard.find('Magazine').attrib['Value'])
-#         except TypeError:
-#             self.AmmoSupply = 0
-#         try:
-#             self.NeedAmmo = int(self.ShipCard.find('NeedMagazine').attrib['Value'])
-#         except TypeError:
-#             self.NeedAmmo = 0
-#         self.Ammo = f"需求 {self.NeedAmmo} 供给 {self.AmmoSupply}"
-#
-#         try:  # 主炮
-#             self.MainWeapon = int(self.ShipCard.find('MainWeapon').attrib['Value'])
-#         except TypeError:
-#             self.MainWeapon = 0
-#
-#         try:  # 主装
-#             self.MainArmor = int(str2float(self.ShipCard.find('MainArmor').attrib['Value']))
-#         except TypeError:
-#             self.MainArmor = 0
-#
-#         try:  # 防空
-#             self.AA = self.ShipCard.find('AA').attrib['Value']
-#         except AttributeError:
-#             self.AA = "0 / 0 / 0"
-#
-#         try:  # 水上飞机
-#             self.Aircraft = self.ShipCard.find('Plane').attrib['Value']
-#         except AttributeError:
-#             self.Aircraft = "0"
-#
-#         try:  # 建造时间
-#             self.SpendTime = str2float(self.ShipCard.find('SpendTime').attrib['Value'])
-#         except AttributeError:
-#             self.SpendTime = 0
-#
-#         try:  # 建造费用
-#             self.Price = int(self.ShipCard.find('SpendMoney').attrib['Value'])
-#         except ValueError:
-#             _sp = self.ShipCard.find('SpendMoney').attrib['Value'].split('E')
-#             self.Price = int(str2float(_sp[0]) * 10 ** int(_sp[1]))  # 把科学计数法转换为整数
-#         # ________________________________________________________________________________钢板
-#         self._airfixs = self.root.find('airfixs')
-#         self.AirFixs = {
-#             "name": [],
-#             "posX": [],
-#             "posY": [],
-#             "posZ": [],
-#             "rotX": [],
-#             "rotY": [],
-#             "rotZ": [],
-#             "thickness": [],
-#             "scaleX": [],
-#             "scaleY": [],
-#             "scaleZ": [],
-#             "group": [],
-#             "colR": [],
-#             "colG": [],
-#             "colB": []
-#         }
-#         self._airfix_points = []
-#         if self._airfixs is None:
-#             self.AirFixs = None
-#         else:
-#             for airfix in self._airfixs:
-#                 for key in self.AirFixs.keys():
-#                     self.AirFixs[key].append(airfix.attrib[key])
-#                 # 钢板的所有point元素全部作为list存到self._airfix_points中
-#                 points = [list(p.attrib.values()) for p in airfix.findall('point')]
-#                 self._airfix_points.append(points)
-#             self.AirFixs['points'] = self._airfix_points
-#         # ________________________________________________________________________________MODs
-#         self._mods = self.root.find('mods')
-#         self.Mods = {
-#             "name": [],
-#             "posX": [],
-#             "posY": [],
-#             "posZ": [],
-#             "rotX": [],
-#             "rotY": [],
-#             "rotZ": [],
-#             "colR": [],
-#             "colG": [],
-#             "colB": [],
-#             "modID": [],
-#             "modType": [],
-#             "shaftType": []
-#         }
-#         if self._mods is None:
-#             self.Mods = None
-#         else:
-#             for mod in self._mods:
-#                 for key in self.Mods.keys():
-#                     self.Mods[key].append(mod.attrib[key])
-#         self.weight_ratio = round(self.Displacement_in_t / self.Volume_in_m, 3)
-#         # 方形系数
-#         self.SquareCoefficient = round(
-#             self.Displacement_in_t / (self.Length_in_m * self.Width_in_m * self.Draft_in_m), 3)
-#
-#     @staticmethod
-#     def get_magazines_from_weapon_name(weapon):
-#         ...
-#
-#     def get_parts_weight(self):
-#         """
-#         计算每个种类零件的总重量
-#         :return:
-#         """
-#         self.parts_weight = {category: 0 for category in self.Parts.keys()}
-#         for category, parts in self.Parts.items():  # 计算每个category的总重量
-#             if len(parts) == 0:
-#                 continue
-#             self.parts_weight[category] = round(sum([part.Weight for part in parts]), 3)
-#
-#     def get_turbine_weight(self):
-#         """
-#         计算轮机的总重量
-#         :return:
-#         """
-#         # 获取战舰的轮机数据：
-#         if self.Parts["排烟器"]:
-#             self.turbines_weight = round(sum([part.turbine_weight for part in self.Parts["排烟器"]]), 3)
-#
-#     def get_weight_relation(self):
-#         """
-#         必须在get_parts_weight()和get_turbine_weight()之后调用
-#         :return:
-#         """
-#         _data = self.parts_weight.copy()
-#         # 加入其他数据
-#         _data['装甲板'] = self.armorboards_weight
-#         _data['轮机'] = self.turbines_weight
-#         _data['动力系统'] = _data['排烟器'] + _data['轮机']
-#         del _data['排烟器']
-#         del _data['轮机']
-#         # 合并船体数据和传动数据
-#         _data['船体'] = round(_data['船体'] + _data['传动'], 3)
-#         del _data['传动']
-#         # 将装甲舱减去的重量加到船体上
-#         _data['船体'] += self.armor2hull_weight
-#         # 把机库增重从船体上减去
-#         _data['船体'] -= self.aircraft_added_weight
-#         # 合并装饰和火控和测距仪数据
-#         _data['装饰'] = _data['装饰'] + _data['火控'] + _data['测距仪'] + _data['弹射器']
-#         try:
-#             del _data['火控']
-#             del _data['测距仪']
-#             del _data['弹射器']
-#         except KeyError:
-#             pass
-#         # 删除装甲舱毛重
-#         del _data['装甲']
-#         # 删除值为0的部件
-#         for key in list(_data.keys()):
-#             if _data[key] == 0:
-#                 del _data[key]
-#         self.WeightRelation = _data
-#
-#     @staticmethod
-#     def get_weapons_magazines(weapon_name):
-#         if weapon_name[1] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
-#             weapon_name = weapon_name[2:]
-#
-#     def get_weapons_magazines_relation(self):
-#         ...
-#
-#     def read_parts(self):
-#         """
-#         读取零件元素，初始化self.Parts
-#         :return: self.Parts
-#         """
-#         # 初始化result
-#         result = {category: [] for category in category_mapping.keys()}
-#         for part in self.root.find('parts').findall('part'):  # 遍历所有的零件
-#             # 判断是否为武器
-#             is_weapon = False
-#             # 判断是否为排烟器
-#             is_turbine = False
-#             if part.find('WeaponAimArea') is not None:
-#                 is_weapon = part.find('WeaponAimArea').attrib
-#             elif part.find('turbine') is not None:
-#                 is_turbine = part.find('turbine').attrib
-#             # 初始化Part类
-#             P = Part(  # -----------------------------------------------初始化Part类
-#                 part.attrib['Id'],  # Id
-#                 part.attrib['Name'],  # Name
-#                 str2float(part.attrib['weight']) * WEIGHT_MULTIPLIER,  # Weight
-#                 part.attrib['buoyancy'],  # Buoyancy
-#                 (
-#                     int(part.find("Rotation").attrib['RotX']),  # Rotation
-#                     int(part.find("Rotation").attrib['RotY']),
-#                     int(part.find("Rotation").attrib['RotZ'])
-#                 ), (
-#                     round(str2float(part.find("position").attrib['posX']), 1),  # Position
-#                     round(str2float(part.find("position").attrib['posY']), 1),
-#                     round(str2float(part.find("position").attrib['posZ']), 1)
-#                 ), (
-#                     str2float(part.find("scale").attrib['ScaX']),  # Scale
-#                     str2float(part.find("scale").attrib['ScaY']),
-#                     str2float(part.find("scale").attrib['ScaZ'])
-#                 ), (
-#                     int(256 * str2float(part.find("Color").attrib['ColorR'])),  # Color
-#                     int(256 * str2float(part.find("Color").attrib['ColorG'])),
-#                     int(256 * str2float(part.find("Color").attrib['ColorB']))
-#                 ),
-#                 is_weapon,
-#                 is_turbine
-#             )  # ----------------------------------------------------------------结束初始化
-#             if is_turbine:  # 获取排烟器种类等信息
-#                 self.Turbines.append([P.ID, {
-#                     "单个轮机大小": (P.countX, P.countY),
-#                     "单烟轮机重量": P.turbine_weight,
-#                     "单烟轮机数量": P.turbine_num_show,
-#                     "单烟轮机大小": P.turbine_size
-#                 }])
-#             _map1 = {'1*1*1': 1, '3*1*2': 6, '2*2*2': 8}
-#             _map2 = {'1/2': 0.5, '1/3': 1 / 3, '1/6': 1 / 6, '5/6': 5 / 6}
-#             # 计算装甲舱增重
-#             if "装甲舱" in P.ID:
-#                 p_volume_in_g = _map1[P.ID[-5:]] if P.ID[-5:] in _map1.keys() else _map1[P.ID[-3:]]
-#                 self.armor2hull_weight += p_volume_in_g * 5.4
-#             self.armor2hull_weight = round(self.armor2hull_weight, 3)
-#             # 计算舰载机增重
-#             if '机库' in P.ID:
-#                 self.aircraft_added_weight += 32.4
-#             self.aircraft_added_weight = round(self.aircraft_added_weight, 3)
-#             added_to_category = False
-#             # 通过part的ID和Name判断part属于哪个category
-#             for category, part_names in category_mapping.items():
-#                 if any(part_name in P.ID for part_name in part_names) or P.Name in part_names:
-#                     result[category].append(P)
-#                     added_to_category = True
-#                     break
-#             if not added_to_category:
-#                 result["装饰"].append(P)
-#         # 得到属性 Parts, parts_weight, turbines_weight
-#         self.Parts = result
-#         self.get_parts_weight()
-#         # 修正装甲重量
-#         self.parts_weight["装甲舱增重"] = self.parts_weight["装甲"] - self.armor2hull_weight
-#         # 修正舰载机重量
-#         self.parts_weight["舰载机增重"] = self.aircraft_added_weight
-#         # 计算轮机重量
-#         self.get_turbine_weight()
-#
-#     def read_armors(self):
-#         """
-#         读取装甲板元素，初始化self.ArmorBoards
-#         :return: self.ArmorBoards
-#         """
-#         result = []
-#         _abs = self.root.find("armorboards")
-#         if _abs is None:
-#             self.ArmorBoards = None
-#             return None
-#         for armor in _abs.findall('armorboard'):
-#             A = ArmorBoard(
-#                 armor.attrib['name'],
-#                 int(1000 * str2float(armor.attrib['sizeZ'])),
-#                 (int(armor.attrib['sizeX']), int(armor.attrib['sizeY'])),
-#                 (armor.attrib['posXen'], armor.attrib['posYen'], armor.attrib['posZen']),
-#                 (armor.attrib['rotXen'], armor.attrib['rotYen'], armor.attrib['rotZen']),
-#                 (
-#                     int(256 * str2float(armor.attrib['colR'])),
-#                     int(256 * str2float(armor.attrib['colG'])),
-#                     int(256 * str2float(armor.attrib['colB']))
-#                 ),
-#                 int(armor.attrib['count']),
-#                 int(armor.attrib['cost']),
-#                 int(armor.attrib['time'])
-#             )
-#             result.append(A)
-#         self.ArmorBoards = result
-#         self.armorboards_weight = round(sum([armor.Weight for armor in self.ArmorBoards]), 3)
-#         self.get_weight_relation()
-#
-#     def read_rebars(self):
-#         """
-#         读取钢筋元素，初始化self.Rebars
-#         :return: self.Rebars
-#         """
-#         result = []
-#         _rb = self.root.find("rebars")
-#         if _rb is None:
-#             self.Rebars = None
-#             return None
-#         for _rebar in _rb.findall('_rebar'):
-#             R = Rebar(  # -----------------------------------------------初始化Rebar类
-#                 _rebar.attrib['name'],  # name
-#                 (
-#                     str2float(_rebar.attrib['posX']),  # position
-#                     str2float(_rebar.attrib['posY']),
-#                     str2float(_rebar.attrib['posZ'])
-#                 ), (
-#                     str2float(_rebar.attrib['rotX']),  # rotation
-#                     str2float(_rebar.attrib['rotY']),
-#                     str2float(_rebar.attrib['rotZ'])
-#                 ), (
-#                     str2float(_rebar.attrib['childrotX']),  # child rotation
-#                     str2float(_rebar.attrib['childrotY']),
-#                     str2float(_rebar.attrib['childrotZ'])
-#                 ), (
-#                     int(256 * str2float(_rebar.attrib['colorR'])),  # color
-#                     int(256 * str2float(_rebar.attrib['colorG'])),
-#                     int(256 * str2float(_rebar.attrib['colorB']))
-#                 ),
-#                 (str2float(_rebar.attrib['diameterStart']), str2float(_rebar.attrib['diameterEnd'])),  # diameter
-#                 int(_rebar.attrib['lineCount']),  # line count
-#                 str2float(_rebar.attrib['height']),  # height
-#                 str2float(_rebar.attrib['variant']),  # variant
-#                 _rebar.attrib['group'],  # group
-#                 str2float(_rebar.attrib['hallowOut']),  # hallow out
-#             )
-#             result.append(R)
-#         self.Rebars = result
-
-
 def str2float(string):
     # 如果是科学计数法，转换为float
     if "E" in string:
@@ -1359,11 +1133,7 @@ def multiply_list(list1, list2):
 
 if __name__ == '__main__':
     import os
-
     # 路径
     XMLs = ['KMS-Graf Zeppelin.xml', 'IJN-Shimakaze.xml', 'test.xml']
     OwnPath = os.path.dirname(os.path.abspath(__file__))
     design_path = os.path.join(OwnPath, 'Designs', XMLs[1])
-    # 创建读取器
-    reader = ReadXML(design_path)
-    analyser = DesignAnalyser()

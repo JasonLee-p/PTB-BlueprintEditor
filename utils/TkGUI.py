@@ -116,7 +116,7 @@ def set_window(window, title: str, transparent=True):
     :param transparent: bool, whether the window is transparent.
     """
     if transparent:
-        window.attributes("-alpha", 0.95)
+        window.attributes("-alpha", 0.98)
         TransparentColor = 'gray'
         window.wm_attributes("-transparentcolor", TransparentColor)
     ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 告诉操作系统使用程序自身的dpi适配
@@ -515,7 +515,7 @@ class EntryBox3parts:
         _style.configure("TButton", font=font)
 
         self.button = ttkButton(self.basic, text=text2[1], width=width3[2], command=bt_command)
-        self.button.pack(side="right", expand=0, padx=5)
+        self.button.pack(side="right", expand=0, padx=4)
         self.box.insert(0, '')
         # 当输入框正在输入时，在下方显示输入记录，并且可以通过鼠标点击记录来输入
         self.box.bind('<KeyRelease>', self.onKeyRelease)
@@ -872,8 +872,10 @@ class CodeEditor(TextEntryWithMenu):
         super().__init__(frame)
         self.redirect = redirect
         self.default_code = \
-            "# -*- coding: utf-8 -*-\n" \
-            "print('Hello World!')"
+            "# Python\n" \
+            "for i in range(1, 101):  # 这是一个循环语句：\n" \
+            "    text = f'DPFM {i}times!'  # 缩进4空格\n" \
+            "    print(text)"
         # 中间：运行按钮
         self.button = Button(master=self.basic, text='Run', command=self.run)
         self.button.pack(side='left', fill="both", padx=8)
@@ -918,9 +920,10 @@ class CodeEditor(TextEntryWithMenu):
         # A: 用tag_config()方法
         self.result.tag_config('_time', foreground='blue', font=("Source Code Pro", 9))
         self.result.tag_config('init', foreground='blue', font=("Source Code Pro", 9))
+        self.result.tag_config('blue', foreground='blue', font=("Source Code Pro", 12))
         self.result.tag_config('receive', foreground='black', font=("Source Code Pro", 12))
-        self.result.insert('end', time.strftime("\n运行时间：%Y-%m-%d %H:%M:%S", time.localtime()), ('_time',))
-        self.result.insert('end', '\n')
+        self.result.insert('end', time.strftime("\n%Y-%m-%d %H:%M:%S", time.localtime()), ('_time',))
+        self.result.insert('end', ' 运行代码：\n', "blue")
         self.result.config(state='disabled')
         code = self.text.get('1.0', 'end')
         # 监测恶意代码
@@ -931,6 +934,8 @@ class CodeEditor(TextEntryWithMenu):
             return
         exec(code)
         self.result.insert('end', '\n\n')
+        # 跳转到最后
+        self.result.see('end')
 
     def _show_line(self, event=None):
         self.timer = time.time()

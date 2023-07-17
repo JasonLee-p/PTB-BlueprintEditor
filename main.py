@@ -10,18 +10,20 @@ Description:
 """
 import base64
 import os
+from tkinter import Tk, PhotoImage, BooleanVar
+from tkinter.ttk import Checkbutton as ttkCheckbutton
 # 项目文件
-from tkinter import Tk, PhotoImage
-
+from Data.PartAttrMaps import MainWeaponsData
 from images.Img_main import *
 from images.Img_shipType import *
 from images.Img_special import *
 from utils.TkGUI import *
 from utils.plt_ import *
-from design_reader import DesignAnalyser, ReadXML, Part, ArmorBoard, Rebar
+from utils.weapon_selector import WeaponSelector
+from design_reader import DesignAnalyser, ReadXML, Part, ArmorBoard, Rebar, AdvancedHull
 
 LOCAL_ADDRESS = os.getcwd()
-REDIRECT = False
+REDIRECT = True
 
 
 class MainHandler:
@@ -76,6 +78,8 @@ class MainHandler:
                     del self.DesignReader
                     del self.Analyser
                     # 读取图纸
+                    show_time()
+                    show_text(f" {file_name} ", "stdout", False)
                     self.DesignReader = ReadXML(path)
                     # 获取其他信息
                     Part.get_all_information()
@@ -87,11 +91,15 @@ class MainHandler:
                     GUI.Left.update_treeview()
                     GUI.ShowFrame.update_messages()
                     GUI.AnalFrame.update_plots()
+                    GUI.ThDFrame.update_3d()
                     self.last_design = all_values[next_index]
                     # 删除临时窗口
                     _win.destroy()
                     self.ReadingDesign = False
+                    show_text(f"读取完成！", "purple", False)
                     return
+        self.ReadingDesign = False
+        return
 
 
 class TkinterGUI:
@@ -105,22 +113,25 @@ class TkinterGUI:
         self.Bottom = BottomFrame(self.root, redirect=REDIRECT)
         self.Left = LeftFrame(self.root)
         # 初始化标签页Frame
+        self.Frame_3D = Frame(bg=BG_COLOUR)
         self.Frame_BP = Frame(bg=BG_COLOUR)
         self.Frame_AN = Frame(bg=BG_COLOUR)
+        self.Frame_WP = Frame(bg=BG_COLOUR)
         self.Frame_CP = Frame(bg=BG_COLOUR)
         self.Frame_CA = Frame(bg=BG_COLOUR)
-        self.Frame_3D = Frame(bg=BG_COLOUR)
+        self.notebook_main.add(self.Frame_3D, text='       3D预览       ')
         self.notebook_main.add(self.Frame_BP, text='   图纸信息预览   ')
         self.notebook_main.add(self.Frame_AN, text='   图纸数据分析   ')
+        self.notebook_main.add(self.Frame_WP, text='   武器数据一览   ')
         self.notebook_main.add(self.Frame_CP, text='        对比器        ')
         self.notebook_main.add(self.Frame_CA, text='        计算器        ')
-        self.notebook_main.add(self.Frame_3D, text='       3D预览       ')
         # 绑定标签被选中事件
         self.notebook_main.bind('<<NotebookTabChanged>>', self.tab_changed)
         self.notebook_main.pack(fill='both', side='right', expand=True)
         # 初始化标签页内容
         self.ShowFrame = None
         self.AnalFrame = None
+        self.WeaponFrame = None
         self.CompFrame = None
         self.CalFrame = None
         self.ThDFrame = None
@@ -129,11 +140,15 @@ class TkinterGUI:
         self.current_Frame = None
 
     def init(self):
+        self.ThDFrame = ThreeDFrame(self.Frame_3D)
         self.ShowFrame = ShowShipFrame(self.Frame_BP)
         self.AnalFrame = AnalyseFrame(self.Frame_AN)
+        self.WeaponFrame = WeaponFrame(self.Frame_WP)
         self.CompFrame = CompareFrame(self.Frame_CP)
         self.CalFrame = CalculatorFrame(self.Frame_CA)
-        self.all_frames = [self.ShowFrame, self.AnalFrame, self.CompFrame, self.CalFrame, self.ThDFrame]
+
+        self.all_frames = [
+            self.ThDFrame, self.ShowFrame, self.AnalFrame, self.WeaponFrame, self.CompFrame, self.CalFrame]
         self.current_Frame = self.all_frames[0]  # 初始化标签状态
 
     def tab_changed(self, event):
@@ -151,7 +166,7 @@ class BottomFrame(CodeEditor):
     """
 
     def __init__(self, frame, redirect=True):
-        self.basic = Frame(master=frame, bg='ivory', height=270, pady=10)
+        self.basic = Frame(master=frame, bg='ivory', height=250, pady=10)
         self.basic.pack(side='bottom', fill='x', expand=False)
         self.basic.propagate(0)
         Frame(master=self.basic, bg='ivory', width=15).pack(side='left', fill='y', expand=False)
@@ -167,9 +182,15 @@ class BottomFrame(CodeEditor):
         self.scroll2.pack(side='right', fill='y', expand=False)
         self.result.pack(side='left', fill='both', expand=False)
         # 设置字体样式
-        self.result.tag_config('_time', foreground='blue', font=("Source Code Pro", 9))
+        self.result.tag_config('time', foreground='blue', font=("Source Code Pro", 9))
         self.result.tag_config('init', foreground='green', font=("Source Code Pro", 9))
-        self.result.tag_config('receive', foreground='black', font=("Source Code Pro", 12))
+        self.result.tag_config('blue', foreground='blue', font=("Source Code Pro", 12))
+        self.result.tag_config('red', foreground='red', font=("Source Code Pro", 12))
+        self.result.tag_config('green', foreground='green', font=("Source Code Pro", 12))
+        self.result.tag_config('yellow', foreground='yellow', font=("Source Code Pro", 12))
+        self.result.tag_config('purple', foreground='purple', font=("Source Code Pro", 12))
+        self.result.tag_config('gold', foreground='gold', font=("Source Code Pro", 12))
+        self.result.tag_config('gray', foreground='#aaaaaa', font=("Source Code Pro", 12))
 
     def F1(self):
         ...
@@ -232,8 +253,6 @@ class AnalyseFrame:
         self.shipName_f.pack(side='left', fill='y', expand=True, padx=10, pady=5)
         # 添加中间的分割线
         Frame(master=self.basic, bg=BG_COLOUR2, height=5).pack(side='top', fill='x', expand=False)
-        # 给右边留出更多空白
-        Frame(master=self.basic, bg=BG_COLOUR, width=30).pack(side='right', fill='y', expand=False)
         # 添加右键菜单
         self.menu = MyMenu(self.basic, {'F1': self.F1})
 
@@ -242,20 +261,46 @@ class AnalyseFrame:
         plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
         # 重量分布图
-        self.pltCv1 = Canvas(self.basic, bg=BG_COLOUR, highlightthickness=0, width=460, height=500)
+        self.top2 = Frame(master=self.basic, bg=BG_COLOUR, height=500)
+        self.top2.pack(side='top', fill='x', expand=False, pady=0)
+        # 给右边留出更多空白
+        Frame(master=self.top2, bg=BG_COLOUR, width=30).pack(side='right', fill='y', expand=False)
+        self.pltCv1 = Canvas(self.top2, bg=BG_COLOUR, highlightthickness=0, width=470, height=520)
         self.pltCv1.pack(side='left', expand=True)
         self.pie1 = Plot(self.pltCv1, "重量分布图")
         # 重量分布图
-        self.pltCv2 = Canvas(self.basic, bg="black", highlightthickness=0, width=460, height=500)
+        self.pltCv2 = Canvas(self.top2, bg=BG_COLOUR, highlightthickness=0, width=470, height=520)
         self.pltCv2.pack(side='left', expand=True)
         self.pie2 = Plot(self.pltCv2, "火力结构图")
+        # 火炮投射量
+        self.pltCv3 = Canvas(self.top2, bg=BG_COLOUR, highlightthickness=0, width=470, height=520)
+        self.pltCv3.pack(side='left', expand=True)
+        self.bar1 = Plot(self.pltCv3, "火炮投射量", type_='bar')
         self.basic.update()
+        # 添加中间的分割线
+        Frame(master=self.basic, bg=BG_COLOUR2, height=5).pack(side='top', fill='x', expand=False)
+        # 显示分析报告
+        Label(master=self.basic, text=' 分析简报 ', bg=BG_COLOUR, font=(FONT0, FONT_SIZE)).pack(
+            side='top', fill='x', expand=False, padx=30, pady=0)
+        self.analyseReport = StringVar()
+        self.analyseReportS = Label(master=self.basic, textvariable=self.analyseReport, bg=BG_COLOUR, font=(FONT0, 8))
+        self.analyseReportS.pack(side='top', fill='x', expand=False, padx=30, pady=0)
+        self.analyseReport.set(
+            '（~敬请期待~）\n'
+        )
 
     def F1(self):
         ...
 
     def update_plots(self):
         ANLS = Handler.Analyser
+        if Handler.DesignReader.design['ShipCard'] == {}:
+            ANLS.ShipName = '未知'
+            ANLS.weight_relation_data = {"船体": 1, "装甲舱增重": 0, "装甲板": 0, "动力系统": 0, "火炮": 0, "鱼雷": 0, "防空炮": 0,
+                                         "舰载机增重": 0, "装饰": 0}
+            ANLS.right_frame0_data1 = {"主炮耗弹": 1, "副炮耗弹": 0, "鱼雷耗弹": 0, "防空炮耗弹": 0}
+            ANLS.right_frame0_data2 = {'无': 0}
+            ANLS.right_frame0_data3 = {'无': 0}
         self.shipName_var.set(ANLS.ShipName)
         self.pie1.pie1(
             ANLS.weight_relation_data,
@@ -269,6 +314,86 @@ class AnalyseFrame:
             show_threshold=0.01,
             show_value=True
         )
+        self.bar1.bar1(
+            ANLS.right_frame0_data2.keys(),
+            [ANLS.right_frame0_data2.values(), ANLS.right_frame0_data3.values()],
+            colors=[]
+        )
+
+
+class WeaponFrame:
+    def __init__(self, frm):
+        self.basic = frm
+        self.notebook = Notebook(self.basic)
+        self.notebook.pack(side='top', fill='both', expand=True)
+        self.F1 = Frame(bg=BG_COLOUR)
+        self.F2 = Frame(bg=BG_COLOUR)
+        self.notebook.add(self.F1, text='                单武器性能                ')
+        self.notebook.add(self.F2, text='              武器数据对比              ')
+        # --------------------------------------------------------------------------- 单武器性能 F1
+        self.right = Frame(master=self.F1, bg=BG_COLOUR, width=460)
+        self.right.pack(side='right', fill='y', expand=False)
+        self.Selector = WeaponSelector(self.right, side='top', fill='x', expand=False, padx=5, pady=8)
+        self.Selector.tree.bind('<ButtonRelease-1>', self.update_treeview)
+        # 创建2列的treeview，但是要隐藏第一行表头
+        self.tree = Treeview(
+            self.right, columns=('key', 'value', 'unit'), show="headings", height=13, style="Treeview")
+        self.tree['show'] = ''
+        self.tree.column('key', width=210, anchor='e')  # e 是右对齐
+        self.tree.column('value', width=240, anchor='center')
+        self.tree.column('unit', width=80, anchor='w')
+        self.tree.heading('key', text="", anchor="w")
+        self.tree.heading('value', text="", anchor="w")
+        self.tree.heading('unit', text="", anchor="e")
+        self.tree.pack(side='top', expand=False, pady=6)
+        # 初始化左边栏的内容
+        # 定义初始化数据
+        data = [
+            # ('建造时间', '0'),
+            # ('建造花费', '0'),
+            ('装填', '0', 's'),
+            ('射程', '0', 'km'),
+            ('炮塔转速', '0', 'r/m'),
+            ('出膛速度', '0', 'm/s'),
+            ('最长炮弹飞行时间', '0', 's'),
+            ('最大仰角', '0', 'deg'),
+            ('武器散布', '0', 'm/km'),
+            # ('武器口径(毫米)', '0 mm'),  # 不需要
+            ('炮弹重量', '0', 'kg'),
+            # ('联装数', '0'),  # 不需要
+            ('弹药用量', '0', '个'),
+            ('5-15-25-35km穿深', '0 / 0 / 0 / 0', 'mm'),
+            ('推荐数量', '0', '个'),
+        ]
+        # 批量插入数据
+        for item in data:
+            self.tree.insert('', 'end', values=item)
+        # 添加右键菜单
+        self.tree_menu = MyMenu(self.tree, {
+            '刷新': self.update_treeview,
+        })
+        self.menu = MyMenu(self.basic, {'刷新': self.update_treeview})
+
+    def update_treeview(self, event=None):
+        """
+        更新treeview
+        :return:
+        """
+        if self.Selector.selectedName == '':
+            return
+        try:
+            _data = MainWeaponsData[self.Selector.selectedName]
+        except KeyError:
+            show_time()
+            show_text(f'未找到{self.Selector.selectedName}的数据', 'stderr', False)
+            return
+        # 把13到16合并为一个字符串
+        _data = [
+            _data[2], _data[3], _data[4], _data[5], _data[6], _data[7], _data[8], _data[10], _data[12],
+            f"{int(_data[13])} / {int(_data[14])} / {int(_data[15])} / {int(_data[16])}", int(_data[17])
+        ]
+        for i in range(len(_data)):
+            self.tree.set(f'I00{LeftFrame.index2sixteen(i)}', 'value', _data[i])
 
 
 class ShowShipFrame:
@@ -420,6 +545,153 @@ class CalculatorFrame:
         ...
 
 
+class ThreeDFrame:
+    def __init__(self, frm):
+        self.basic = frm
+        # 3D预览
+        self.plt3dFrame = Canvas(self.basic, bg=BG_COLOUR, highlightthickness=0, width=1300, height=700)
+        self.plt3dFrame.pack(side='left', expand=False)
+        self.plt3dFrame.propagate(False)
+        self.plt3d = Plot3D(self.plt3dFrame, None, figsize=(12, 12), place=(650, -350))
+        # 3D预览右侧
+        self.right = Frame(self.basic, bg=BG_COLOUR, highlightthickness=0)
+        self.right.pack(side='left', fill='both', expand=True, padx=0, pady=5)
+        """
+        -------------------------------------------------筛选框------------------------------------------------
+        """
+        self.filter = Frame(self.right, bg=BG_COLOUR)
+        self.all_hull = BooleanVar()
+        self.all_hull.set(True)
+        self.all_add_hull = BooleanVar()
+        self.all_add_hull.set(True)
+        self.add_hull_filter = Frame(self.filter, bg=BG_COLOUR, highlightthickness=0)
+        self.filter_left = Frame(self.filter, bg=BG_COLOUR, highlightthickness=0)
+        self.filter_right = Frame(self.filter, bg=BG_COLOUR, highlightthickness=0)
+        # 绘制筛选栏
+        self.vars = {"船体": BooleanVar(), "装甲舱": BooleanVar(),
+                     "弹药库": BooleanVar(), "机库": BooleanVar(),
+                     "主武器": BooleanVar(), "防空炮": BooleanVar(),
+                     "动力组": BooleanVar(),
+                     "装饰": BooleanVar(),
+                     "进阶船壳": BooleanVar()}
+        for part_type, bool_ in self.vars.items():
+            bool_.set(True)
+        self.last_bool = dict([(part_type, True) for part_type in self.vars.keys()])
+        self.last_ship = None
+        self.filter_frame()
+        """
+        -------------------------------------------------操作栏------------------------------------------------
+        """
+        self.operation_frame()
+        """
+        -------------------------------------------------信息------------------------------------------------
+        """
+        self.update_3d()
+
+    def filter_frame(self):
+        self.filter.pack(side='top', fill='both', expand=False)
+        Frame(self.filter, bg=BG_COLOUR2, height=10).pack(side='top', fill='x', expand=False)
+        Frame(self.filter, bg=BG_COLOUR2, height=10).pack(side='bottom', fill='x', expand=False)
+        Label(self.filter, text='筛选栏', bg=BG_COLOUR, fg='black', font=(FONT0, 16)
+              ).pack(side='top', expand=False, fill='x', pady=0)
+        # 所有船体筛选（顶部）
+        Frame(self.filter, bg=BG_COLOUR2, height=4).pack(side='top', fill='x', expand=False)
+        ttkStyle().configure("TCheckbutton", background=BG_COLOUR, foreground='black', font=(FONT0, FONT_SIZE))
+        ttkCheckbutton(self.filter, text='所有普通零件', variable=self.all_hull, onvalue=True, offvalue=False,
+                       command=lambda: self.update_all(), style='TCheckbutton'
+                       ).pack(side='top', expand=True, pady=0)
+        Frame(self.filter, bg=BG_COLOUR2, height=2).pack(side='top', fill='x', expand=False)
+        # 进阶船壳筛选（底部）
+        self.add_hull_filter.pack(side='bottom', fill='x', expand=False)
+        Frame(self.add_hull_filter, bg=BG_COLOUR2, height=4).pack(side='top', fill='x', expand=False)
+        ttkCheckbutton(self.add_hull_filter, text='所有进阶船壳', variable=self.all_add_hull, onvalue=True, offvalue=False,
+                       command=lambda: self.update_all(), style='TCheckbutton'
+                       ).pack(side='top', expand=True, pady=0)
+        Frame(self.add_hull_filter, bg=BG_COLOUR2, height=2).pack(side='top', fill='x', expand=False)
+        # 普通零件筛选（顶部）
+        self.filter_left.pack(side='left', fill='y', expand=True)
+        self.filter_right.pack(side='left', fill='y', expand=True)
+        # 创建多选框并绑定函数
+        for part_type, bool_ in self.vars.items():
+            if part_type in ["进阶船壳"]:
+                checkbox = ttkCheckbutton(self.add_hull_filter, text=part_type, variable=bool_,
+                                          command=lambda: self.update_3d())
+                checkbox.pack()
+                break
+            elif part_type in ["船体", "装甲舱", "弹药库", "机库"]:
+                checkbox = ttkCheckbutton(self.filter_left, text=part_type, variable=bool_,
+                                          command=lambda: self.update_3d())
+            else:
+                checkbox = ttkCheckbutton(self.filter_right, text=part_type, variable=bool_,
+                                          command=lambda: self.update_3d())
+            checkbox.pack(anchor='w', expand=False)
+
+    def operation_frame(self):
+        ...
+
+    def update_all(self):
+        show_time()
+        show_text(" 预览  ", "blue", False)
+        if self.all_hull.get():
+            for part_type, bool_ in self.vars.items():
+                bool_.set(True)
+            show_text("所有零件—", "stdout", False)
+        else:
+            for part_type, bool_ in self.vars.items():
+                bool_.set(False)
+            show_text("所有零件—", "gray", False)
+        if self.all_add_hull.get():
+            self.vars["进阶船壳"].set(True)
+            show_text("进阶船壳", "stdout", False)
+        else:
+            self.vars["进阶船壳"].set(False)
+            show_text("进阶船壳", "gray", False)
+        self.update_3d()
+
+    def update_3d(self, event=None):
+        try:
+            if self.last_ship == Handler.DesignReader.design['ShipCard']:
+                for part_type, bool_ in self.vars.items():
+                    if not bool_.get():
+                        self.plt3d.hide_part(part_type)
+                    else:
+                        self.plt3d.show_part(part_type)
+                return
+            self.last_ship = Handler.DesignReader.design['ShipCard']
+            part_data = Handler.DesignReader.design["Parts"]
+            shipCard = Handler.DesignReader.design['ShipCard']
+            length = shipCard["Length"]
+            width = shipCard["Width"]
+            height = shipCard["Height"]
+            ship_size = (
+                [-length / 2, length / 2],
+                [-width / 2, width / 2],
+                [-height / 2, height / 2]
+            )
+        except AttributeError and NameError:
+            part_data = None
+            ship_size = [10, 10, 10]
+        try:
+            hull_data = AdvancedHull.currentHull.SlicesPoints
+            hull_pos = AdvancedHull.currentHull.Position
+        except AttributeError:
+            hull_data = None
+            hull_pos = None
+        # 永久清空所有图像：
+        self.plt3d.clear()
+        self.plt3d.draw_ship(
+            hull_data, hull_pos,
+            None,
+            None,
+            part_data, ship_size
+        )
+        for part_type, bool_ in self.vars.items():
+            if not bool_.get():
+                self.plt3d.hide_part(part_type)
+            else:
+                self.plt3d.show_part(part_type)
+
+
 class LeftFrame:
     """
     The left frame of the main window, which contains the entry box, the start button and the play button.
@@ -486,10 +758,13 @@ class LeftFrame:
         _HeavyS = PhotoImage(data=HeavyS)
         _DefenceS = PhotoImage(data=DefenceS)
         _SpeedS = PhotoImage(data=SpeedS)
+        _ModernS = PhotoImage(data=ModernS)
+        _ProductS = PhotoImage(data=ProductS)
 
         self.special_map = {
-            "未知": _DefaultS, "DF": _DefaultS, "SM": _MainS, "SW": _ViceS, "TS": _TorpedoS, "AAS": _AAS,
-            "CR": _PlaneS, "CRI": _Plane1S, "CRII": _Plane2S, "HS": _HeavyS, "PT": _DefenceS, "SS": _SpeedS,
+            "未知": _DefaultS, "DF": _DefaultS, "MW": _MainS, "SW": _ViceS, "TR": _TorpedoS, "AAS": _AAS,
+            "CR": _PlaneS, "CRI": _Plane1S, "CRII": _Plane2S, "HS": _HeavyS, "PT": _DefenceS, "MT": _SpeedS,
+            "MD": _ModernS, "LG": _ProductS
         }
         # 创建显示图片的label
         Frame(master=self.top2, bg=BG_COLOUR, width=20).pack(side='right', fill='y', expand=False)
@@ -566,6 +841,10 @@ class LeftFrame:
         :return:
         """
         ANLS = Handler.Analyser
+        if Handler.DesignReader.design['ShipCard'] == {}:
+            for i in range(11):
+                self.tree.set(f'I00{self.index2sixteen(i)}', 'value', '未知')
+                return
         if ANLS.ShipType != self.last_ship_type:
             self.ship_type.config(image=self.type_map[ANLS.ShipType])
             self.last_ship_type = ANLS.ShipType
@@ -602,9 +881,19 @@ class LeftFrame:
             return '0'
 
 
-def show_text(text, mode):
+def show_text(text, mode, change_line=True):
     GUI.Bottom.result.config(state='normal')
+    if not change_line:
+        GUI.Bottom.result.delete('end-1c linestart', 'end')
     GUI.Bottom.result.insert('end', text + '\n', mode)
+    GUI.Bottom.result.config(state='disabled')
+    # 更新到最新的消息
+    GUI.Bottom.result.see('end')
+
+
+def show_time():
+    GUI.Bottom.result.config(state='normal')
+    GUI.Bottom.result.insert('end', f'{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}\n', 'time')
     GUI.Bottom.result.config(state='disabled')
 
 
