@@ -3,15 +3,24 @@
 
 该文件引用了https://github.com/ZhangBohan233/PtbStats
 """
+import hashlib
+import json
 import xml.etree.ElementTree as ET
+from tkinter import messagebox
 from typing import Tuple
+import os
 # 项目内部引用
+from xml.dom import minidom
+
+import openpyxl as openpyxl
+
 from Data.PartAttrMaps import *
 
 WEIGHT_MULTIPLIER = 0.216  # xml的weight值与真实重量的比例，也就是（3/5）的三次方
 HULL_DENSITY = 0.2  # 普通船体的密度
 PLANE_WEIGHT = 32.4  # 飞机的增重
 NUM_STRS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+_LOCAL_ADDRESS = os.getcwd()  # 项目所在的文件夹
 
 
 class Part:
@@ -33,11 +42,6 @@ class Part:
         :param color: 零件颜色（tuple）
         """
         # --------------------------------------基础信息-------------------------------------- #
-        self.Id = Id
-        if self.Id[0] in NUM_STRS:  # 如果是Id
-            self.ID = self._id2name(Id)
-        else:  # 如果是名称
-            self.ID = Id
         self.Name = name
         self.Weight = weight
         self.Buoyancy = buoyancy
@@ -57,6 +61,11 @@ class Part:
         self.ColR = color[0]
         self.ColG = color[1]
         self.ColB = color[2]
+        self.Id = Id
+        if self.Id[0] in NUM_STRS:  # 如果是Id
+            self.ID = self._id2name(Id)
+        else:  # 如果是名称
+            self.ID = Id
         # --------------------------------------计算信息-------------------------------------- #
         Part.ShipsAllParts.append(self)
         if "机库" in self.ID:
@@ -105,7 +114,7 @@ class Part:
         elif Id in PartType15:
             return PartType15[Id]
         else:
-            print(f'遇到未知的零件ID: {Id}\n位置:{self.Position} 大小: {self.Scale} 颜色: {self.Color}\n')
+            print(f'遇到未知的零件ID: {Id}  敬请查看其零件类型，并联系作者~\n位置:{self.Position} 大小: {self.Scale} 颜色: {self.Color}\n')
             return Id
 
     @staticmethod
@@ -144,7 +153,7 @@ class Part:
         elif Id in PartType15:
             return PartType15[Id]
         else:
-            print(f'遇到未知的零件ID: {Id}')
+            # print(f'遇到未知的零件ID: {Id}')
             return Id
 
     @classmethod
@@ -239,9 +248,6 @@ class MainWeapon(Part):
             self.Magazine = float((self.Caliber ** 2) / 10000 * self.Multi)
             if self.Caliber > MainWeapon.MainCaliber:  # 主炮重量计算
                 MainWeapon.MainCaliber = self.Caliber
-                MainWeapon.MainGunNeedMagazines = 0.0
-            elif self.Caliber == MainWeapon.MainCaliber:
-                MainWeapon.MainGunNeedMagazines += self.Magazine
             try:  # 其他性能数据
                 self.ReloadTime = MainWeaponsData[self.ID][2]  # 装填时间s
                 self.Range = MainWeaponsData[self.ID][3]  # 射程
@@ -293,6 +299,10 @@ class MainWeapon(Part):
 
     @classmethod
     def get_all(cls):
+        # 获取主炮耗弹量：
+        for gun in cls.Gun:
+            if gun.Caliber == cls.MainCaliber:
+                cls.MainGunNeedMagazines += gun.Magazine
         # 重量
         cls.GunTotalWeight = round(cls.GunTotalWeight, 3)
         cls.TorpedoTotalWeight = round(cls.TorpedoTotalWeight, 3)
@@ -579,6 +589,14 @@ class SplitAdHull(AdvancedHull):
         self.z_list.sort()
         return x_range, y_range, z_range
 
+    def get_all_slices_data(self):
+        """
+        获取所有分段的数据
+        :return:
+        """
+        slices_list = list(self.SlicesPoints.values())
+        return self.SlicesPoints
+
     def get_xz_from_y(self, y):
         """
         根据y值获取xz值，注意只有左边的点
@@ -645,7 +663,7 @@ class SplitAdHull(AdvancedHull):
         """
         start, end = self.y_range
         max_width = self.x_range[1] - self.x_range[0]
-        times = (self.y_range[1] - self.y_range[0])/shift
+        times = (self.y_range[1] - self.y_range[0]) / shift
         for i in range(int(times)):
             y = start + shift * i
             xz = self.get_xz_from_y(y)
@@ -908,18 +926,26 @@ class ReadXML:
         slice_dict = {}
         ii = 0
         for slice_ in adHull_all:
-            slice_dict[f"{slice_.attrib['name']}{ii}"] = {
+            try:
+                rail = slice_.attrib['rail']
+            except KeyError:
+                rail = None
+            slice_dict[f"{slice_.attrib['name']}__{ii}"] = {
                 "pos": float(slice_.attrib['pos']),
                 "dock": slice_.attrib['dock'],
-                "rail": slice_.attrib['rail'],
+                "rail": rail,
                 "points": [(float(d.attrib["x"]), float(d.attrib["y"])) for d in slice_.findall('point')]
             }
             ii += 1
+        try:
+            rail2 = adHull_attr['rail']
+        except KeyError:
+            rail2 = None
         AdH = SplitAdHull(
             self.root.find('ShipInfo').attrib['ShipName'],
             (float(adHull_attr['posX']), float(adHull_attr['posY']), float(adHull_attr['posZ'])),
             int(adHull_attr['dock']),
-            adHull_attr['rail'],
+            rail2,
             adHull_attr['waterLineHeight'],
             (float(adHull_attr['hullColorR']), float(adHull_attr['hullColorG']), float(adHull_attr['hullColorB'])),
             (
@@ -929,8 +955,7 @@ class ReadXML:
             ),
             slice_dict
         )
-        result = AdH
-        return result
+        return AdH
 
     @staticmethod
     def dict_str(_dict):
@@ -969,10 +994,10 @@ class ReadXML:
 
 
 class DesignAnalyser:
+    ALL_SHIP = {}
 
     def __init__(self, DR_dict):
         """
-
         :param DR_dict: 读取的xml文件的字典
         """
         # 初始化在函数部分计算的数据：
@@ -1008,11 +1033,8 @@ class DesignAnalyser:
         self.DisplacementVolume_ratio = round(self.Displacement / self.Volume, 2)
         self.BlockEfficiency = round(self.Displacement / (self.Length * self.Width * self.Draft), 3)
         self.Power = ShipCard['Power']
-
         # 对零件的统计计算
-
         # 对装甲板的统计计算
-
         # 呈现数据计算
         self.left_frame_data = {
             '设计者ID': DR_dict['CheakCode']['DesignerID'],
@@ -1067,20 +1089,35 @@ class DesignAnalyser:
                 p.Weight for p in (DR_dict['Parts']['装饰'] + DR_dict['Parts']['测距仪'] + DR_dict['Parts']['火控'])
             )
         }
-
         self.right_frame0_data1 = {
             "主炮耗弹": MainWeapon.MainGunNeedMagazines,
             "副炮耗弹": MainWeapon.OtherGunNeedMagazines,
             "鱼雷耗弹": MainWeapon.TorpedoNeedMagazines,
             "防空耗弹": AA.NeedMagazines,
         }
-
+        # print(self.weight_relation_data)
+        # print(self.right_frame0_data1)
         self.right_frame0_data2 = {}
         for mw_ in MainWeapon.Gun:
             self.right_frame0_data2[mw_.ID] = mw_.FireRate_per_Magazine
         self.right_frame0_data3 = {}
         for mw_ in MainWeapon.Gun:
             self.right_frame0_data3[mw_.ID] = mw_.FireRate
+        # 对数据进行总体收集和分析
+        if self.weight_relation_data['动力系统'] > 0.01:
+            # 获取hash值
+            store_dict = {
+                "设计者ID": DR_dict['CheakCode']['DesignerID'],
+                "吨位": self.Displacement,
+                "基础数据": self.right_frame0_data,
+                "二级数据": self.left_frame_data,
+                "吨位关系": self.weight_relation_data,
+                "耗弹关系": self.right_frame0_data1,
+            }
+            # 固定一种hash方法，每次打开程序的时候同样的内容会有同样的hash值
+            self.dict_hash = hashlib.md5(str(store_dict).encode('utf-8')).hexdigest()
+            # 存入ALL_SHIP
+            DesignAnalyser.ALL_SHIP[self.dict_hash] = store_dict
 
     def showed_turbine_names(self):
         # 初步处理部分数据
@@ -1110,6 +1147,119 @@ class DesignAnalyser:
         else:
             self.turbine_nums = Funnel.TurbinesNum
 
+    def save_data(self, file_name):
+        """
+        :param file_name: 带路径和后缀的文件名
+        :return:
+        """
+        text_dict = {
+            "left": ["排水", "水线长度", "水上高度", "推进功率", "视野范围", "主炮口径", "主装厚度", "弹药供给", "实际价格"],
+            "right": ["体积", "水线宽度", "吃水深度", "阻力系数", "隐蔽能力", "火力射程", "防空能力", "载机数量", "建造时间"]
+        }
+        basic_data_zip = zip(
+            text_dict["left"], self.right_frame0_data["left"],
+            text_dict["right"], self.right_frame0_data["right"]
+        )
+        try:
+            with open(file_name, 'w', encoding='utf-8') as f:
+                # 判断文件类型
+                if file_name.endswith(".xlsx") or file_name.endswith(".xls"):
+                    # 创建excel文件
+                    wb = openpyxl.Workbook()
+                    ws = wb.active
+                    # 写入数据
+                    ws.append(["设计名称", self.ShipName])
+                    ws.append([""])
+                    ws.append(['基础数据：'])
+                    for left_text, left, right_text, right in basic_data_zip:
+                        ws.append([left_text, left, right_text, right])
+                    ws.append([""])
+                    ws.append(["二级数据："])
+                    for k, v in self.left_frame_data.items():
+                        ws.append([k, v])
+                    ws.append([""])
+                    ws.append(["吨位关系："])
+                    for k, v in self.weight_relation_data.items():
+                        ws.append([k, v])
+                    ws.append([""])
+                    ws.append(["耗弹关系："])
+                    for k, v in self.right_frame0_data1.items():
+                        ws.append([k, v])
+                    # 保存文件
+                    wb.save(os.path.join(_LOCAL_ADDRESS, file_name))
+                elif file_name.endswith(".txt"):
+                    # 写入数据
+                    f.write(f"设计名称 : {self.ShipName}\n")
+                    f.write("\n基础数据：\n")
+                    for left_text, left, right_text, right in basic_data_zip:
+                        f.write(f"{left_text} : {left}    {right_text} : {right}\n")
+                    f.write("\n二级数据：\n")
+                    for k, v in self.left_frame_data.items():
+                        f.write(f"{k} : {v}\n")
+                    f.write("\n吨位关系：\n")
+                    for k, v in self.weight_relation_data.items():
+                        f.write(f"{k} : {v}\n")
+                    f.write("\n耗弹关系：\n")
+                    for k, v in self.right_frame0_data1.items():
+                        f.write(f"{k} : {v}\n")
+                    # 保存文件
+                    f.close()
+                elif file_name.endswith(".xml"):
+                    # 创建xml文件
+                    root = ET.Element("root")
+                    # 写入数据
+                    ET.SubElement(root, "设计名称").text = self.ShipName
+                    ET.SubElement(root, "基础数据").text = "基础数据："
+                    for left_text, left, right_text, right in basic_data_zip:
+                        ET.SubElement(root, left_text).text = str(left)
+                        ET.SubElement(root, right_text).text = str(right)
+                    ET.SubElement(root, "二级数据").text = "二级数据："
+                    for k, v in self.left_frame_data.items():
+                        ET.SubElement(root, k).text = str(v)
+                    ET.SubElement(root, "吨位关系").text = "吨位关系："
+                    for k, v in self.weight_relation_data.items():
+                        ET.SubElement(root, k).text = str(v)
+                    ET.SubElement(root, "耗弹关系").text = "耗弹关系："
+                    for k, v in self.right_frame0_data1.items():
+                        ET.SubElement(root, k).text = str(v)
+                    # 保存文件
+                    tree = ET.ElementTree(root)
+                    tree.write(os.path.join(_LOCAL_ADDRESS, file_name), encoding="utf-8", xml_declaration=True)
+                elif file_name.endswith(".json"):
+                    # 写入数据
+                    sec_data = dict(zip(text_dict["left"] + text_dict["right"],
+                                        self.right_frame0_data["left"] + self.right_frame0_data["right"]))
+                    data = {
+                        "设计名称": self.ShipName,
+                        "基础数据": dict(self.left_frame_data),
+                        "二级数据": sec_data,
+                        "吨位关系": self.weight_relation_data,
+                        "耗弹关系": self.right_frame0_data1
+                    }
+                    # 保存文件
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                else:
+                    print("文件类型错误！")
+        except PermissionError:
+            print("文件被占用，请关闭文件后重试！")
+
+    @classmethod
+    def store_data(cls, data):
+        # 打开json文件，写入数据
+        try:
+            with open(os.path.join(_LOCAL_ADDRESS, "reader_cache.json"), 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+        except FileNotFoundError:
+            json_data = {}
+        # 检查是否有重复的数据
+        for k, v in data.items():
+            if k in json_data.keys():
+                continue
+            else:
+                json_data[k] = v
+        with open(os.path.join(_LOCAL_ADDRESS, "reader_cache.json"), 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=2)
+
 
 def str2float(string):
     # 如果是科学计数法，转换为float
@@ -1133,6 +1283,7 @@ def multiply_list(list1, list2):
 
 if __name__ == '__main__':
     import os
+
     # 路径
     XMLs = ['KMS-Graf Zeppelin.xml', 'IJN-Shimakaze.xml', 'test.xml']
     OwnPath = os.path.dirname(os.path.abspath(__file__))

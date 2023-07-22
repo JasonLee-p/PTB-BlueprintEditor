@@ -53,7 +53,7 @@ if __name__ == '__main__':
             if file.endswith('.png'):
                 with open(os.path.join(root, file), 'rb') as img:
                     img_base64 = base64.b64encode(img.read())
-                    f.write(f'{file[:-4]} = {img_base64}\n\n')
+                    f.write(f'W{file[:-4]} = {img_base64}\n\n')
     # OtherPart（其他部件）的图片
     with open('Img_otherPart.py', 'a') as f:
         f.write('"""This file is used to store ships other parts images in the PTB-BlueprintReader app."""\n\n')

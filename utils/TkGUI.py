@@ -6,9 +6,9 @@ import ctypes
 import sys
 import json
 import time
-from tkinter import Frame, Label, Canvas, Button, Scrollbar,\
-    Text, Menu, Toplevel,\
-    StringVar, IntVar,\
+from tkinter import Frame, Label, Canvas, Button, Scrollbar, PanedWindow, \
+    Text, Menu, Toplevel, \
+    StringVar, IntVar, \
     TclError, INSERT
 from tkinter import messagebox, filedialog
 from tkinter.ttk import Combobox, Treeview, Notebook
@@ -104,8 +104,23 @@ BG_COLOUR2 = 'ivory'  # 背景色
 FG_COLOUR = 'black'  # 前景色
 FONT0 = 'microsoft yahei'
 FONT1 = '幼圆'
-FONT_SIZE = 12
-FONT_SIZE2 = 10
+# 获取分辨率：
+ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 设置高分辨率
+user32 = ctypes.windll.user32
+width_ = user32.GetSystemMetrics(0)
+height_ = user32.GetSystemMetrics(1)
+RATE = width_/1920
+
+ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)  # 获取屏幕的缩放因子
+
+FONT_SIZE9 = int(9 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE10 = int(10 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE12 = int(12 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE14 = int(14 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE16 = int(16 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE18 = int(18 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE20 = int(20 * 125 * width_ / (ScaleFactor * 1920))
+FONT_SIZE22 = int(22 * 125 * width_ / (ScaleFactor * 1920))
 
 
 def set_window(window, title: str, transparent=True):
@@ -115,12 +130,11 @@ def set_window(window, title: str, transparent=True):
     :param title: str, the title of the window.
     :param transparent: bool, whether the window is transparent.
     """
+    window.attributes("-alpha", 0)  # 设置窗口透明度
     if transparent:
-        window.attributes("-alpha", 0.98)
         TransparentColor = 'gray'
         window.wm_attributes("-transparentcolor", TransparentColor)
     ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 告诉操作系统使用程序自身的dpi适配
-    ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)  # 获取屏幕的缩放因子
     window.tk.call('tk', 'scaling', ScaleFactor / 75)  # 设置程序缩放
     try:
         window.state("zoomed")
@@ -130,20 +144,20 @@ def set_window(window, title: str, transparent=True):
         window.geometry("%dx%d" % (w, h))
     # master.iconbitmap(os.path.join(os.path.dirname(own_path), 'images/icon.ico'))  # 更改窗口图标
     window.title(title)  # 窗口名
-    window.minsize(1200, 860)
+    window.minsize(int(1200*RATE), int(860*RATE))
     window.configure(bg=BG_COLOUR)  # 背景色
 
 
 def main_title(master, text, side):
-    Frame(master=master, bg=BG_COLOUR, height=10).pack(side='top', fill='x')
+    Frame(master=master, bg=BG_COLOUR, height=int(10*RATE)).pack(side='top', fill='x')
     title_v = Label(
         master,
         text=text,  # 标签的文字
         bg=BG_COLOUR,  # 标签背景颜色
-        font=(FONT1, 14),  # 字体和字体大小
-        width=30, height=1)  # 标签长宽
+        font=(FONT1, FONT_SIZE14),  # 字体和字体大小
+        width=int(30*RATE), height=1)  # 标签长宽
     title_v.pack(side=side, pady=0, expand=False, anchor='center')  # 固定窗口位置
-    Frame(master=master, bg=BG_COLOUR, height=6).pack(side='top', fill='x')
+    Frame(master=master, bg=BG_COLOUR, height=int(6*RATE)).pack(side='top', fill='x')
     Frame(master=master, bg='ivory', height=4).pack(side='top', fill='x')
 
 
@@ -166,7 +180,7 @@ def title(text, bg_colour):
 
 def button(master, expand, belonging, hit_func, text, side, width, style=None):
     BTStyle = ttkStyle()
-    BTStyle.configure('TButton', borderradius=5, font=(FONT0, FONT_SIZE))
+    BTStyle.configure('TButton', borderradius=5, font=(FONT0, FONT_SIZE12))
     _style = style if style else 'TButton'
     b = ttkButton(master, text=text, width=width, command=hit_func, style=_style)
     b.configure()
@@ -181,7 +195,7 @@ def combox(master, belonging, selected_func, values, position='basic', width=19,
     text_var = StringVar()
     cb = Combobox(
         master, textvariable=text_var, state='readonly',
-        font=(FONT0, FONT_SIZE), width=width, height=height,
+        font=(FONT0, FONT_SIZE12), width=width, height=height,
         values=values
     )
     if style_name:
@@ -207,9 +221,9 @@ class MyTreeView:
         self.w_s = list(columns.values())
         self.style_name = style_name
         TVStyle = ttkStyle()
-        TVStyle.configure('Treeview', rowheight=self.h, font=(FONT0, FONT_SIZE))
+        TVStyle.configure('Treeview', rowheight=self.h, font=(FONT0, FONT_SIZE12))
         self.VScroll1 = Scrollbar(
-            master, relief='flat', troughcolor=BG_COLOUR, width=30, orient='vertical')
+            master, relief='flat', troughcolor=BG_COLOUR, width=int(30*RATE), orient='vertical')
         self.VScroll1.pack(side='right', fill='y', padx=0)
         self.tv = Treeview(
             master=master,  # 父容器
@@ -506,13 +520,13 @@ class EntryBox3parts:
         :param memory_max_len:
         """
         self.basic = Frame(master, bg=BG_COLOUR)
-        self.basic.pack(side=position, expand=0)
+        self.basic.pack(side=position, expand=0, padx=9)
         self.text = Label(self.basic, text=text2[0], font=font, width=width3[0], bg=BG_COLOUR)
         self.text.pack(side="left", expand=0, padx=5)
         self.box = ttkEntry(self.basic, justify="center", font=font, width=width3[1])
         self.box.pack(side="left", expand=0, padx=5)
-        _style = ttkStyle()
-        _style.configure("TButton", font=font)
+        self.style = ttkStyle()
+        self.style.configure('TButton', font=font)
 
         self.button = ttkButton(self.basic, text=text2[1], width=width3[2], command=bt_command)
         self.button.pack(side="right", expand=0, padx=4)
@@ -665,7 +679,7 @@ def text_with_combox(master, text, font, text_w, combox_w, combox_list, add_wu=T
     # 设置默认值
     if combox_list:
         c.current(0)
-    c.pack(side='left', expand=False, padx=5, pady=5)
+    c.pack(side='left', expand=False, padx=int(5*RATE), pady=int(5*RATE))
     return c
 
 
@@ -738,7 +752,7 @@ def release_protection(func):
 class TextEntryWithMenu:
     text = None
 
-    def __init__(self, frame, font=('Consolas', 12)):
+    def __init__(self, frame, font=('Consolas', FONT_SIZE12)):
         # 左边：带滚动条的代码文本编辑器
         self.basic = frame
         self.text = Text(master=self.basic, bg='ivory', width=70, height=8, font=font)
@@ -902,7 +916,7 @@ class CodeEditor(TextEntryWithMenu):
             self.default_code
         )
         # 鼠标停止不动时间2s后，显示当前行数：
-        self.line_label = Label(master=self.text, text=' 行数：', bg='white', font=(FONT1, FONT_SIZE))
+        self.line_label = Label(master=self.text, text=' 行数：', bg='white', font=(FONT1, FONT_SIZE12))
         self.line_label.config(bd=1, relief='solid', anchor='w')
         self.text.bind('<Motion>', self._show_line)
         self.timer = time.time()
@@ -918,10 +932,10 @@ class CodeEditor(TextEntryWithMenu):
         # 用蓝色显示运行时间
         # Q: 如何用蓝色显示运行时间？
         # A: 用tag_config()方法
-        self.result.tag_config('_time', foreground='blue', font=("Source Code Pro", 9))
-        self.result.tag_config('init', foreground='blue', font=("Source Code Pro", 9))
-        self.result.tag_config('blue', foreground='blue', font=("Source Code Pro", 12))
-        self.result.tag_config('receive', foreground='black', font=("Source Code Pro", 12))
+        self.result.tag_config('_time', foreground='blue', font=("Source Code Pro", FONT_SIZE9))
+        self.result.tag_config('init', foreground='blue', font=("Source Code Pro", FONT_SIZE9))
+        self.result.tag_config('blue', foreground='blue', font=("Source Code Pro", FONT_SIZE12))
+        self.result.tag_config('receive', foreground='black', font=("Source Code Pro", FONT_SIZE12))
         self.result.insert('end', time.strftime("\n%Y-%m-%d %H:%M:%S", time.localtime()), ('_time',))
         self.result.insert('end', ' 运行代码：\n', "blue")
         self.result.config(state='disabled')
@@ -974,13 +988,14 @@ class TempTransparentWin:
         self.root.attributes("-transparentcolor", "gray")
         self.root.config(bg='gray')
         # 设置窗口最大化
-        width = self.root.winfo_screenwidth() * 4 / 3
-        height = self.root.winfo_screenheight() * 4 / 3
+        width = self.root.winfo_screenwidth()
+        height = self.root.winfo_screenheight()
+        # print(width, height)
         self.root.geometry("%dx%d+100+0" % (width, height))
         self.root.wm_attributes("-topmost", True)
         self.root.overrideredirect(True)  # 设置窗口隐藏边框
-        Label(self.root, text='...正在读取图纸...', font=(FONT1, 40), bg='gray', fg=text_color
-                 ).pack(expand=True, fill='both', side='top')
+        Label(self.root, text='——— 正在读取图纸 ———', font=(FONT0, int(40*RATE)), bg='gray', fg='#888888'
+              ).place(relx=0.666, rely=0.85, anchor='center')
         for i in range(1, 17):
             self.root.attributes("-alpha", i / 20)
             self.root.update()
