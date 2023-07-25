@@ -6,14 +6,9 @@
 import hashlib
 import json
 import xml.etree.ElementTree as ET
-from tkinter import messagebox
 from typing import Tuple
 import os
-# 项目内部引用
-from xml.dom import minidom
-
 import openpyxl as openpyxl
-
 from Data.PartAttrMaps import *
 
 WEIGHT_MULTIPLIER = 0.216  # xml的weight值与真实重量的比例，也就是（3/5）的三次方
@@ -756,7 +751,7 @@ class ReadXML:
                 MW = MainWeapon(part.attrib['Id'], name, weight, buoyancy, rotation, position, scale, color,
                                 part.find('WeaponAimArea') if not part.find('WeaponAimArea') else part.find(
                                     'WeaponAimArea').attrib)
-                if MW.Name == "Torpedo":
+                if MW.Name == "Torpedo" or "雷" in MW.ID:
                     result['鱼雷'].append(MW)
                 else:
                     result['火炮'].append(MW)

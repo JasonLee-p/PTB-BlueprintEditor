@@ -10,8 +10,9 @@ Description:
     本文件是工艺战舰图纸阅读器的主文件，该程序可以读取来自深渊的工艺战舰图纸文件。
 """
 import os
-from tkinter import Tk, PhotoImage, BooleanVar, PanedWindow
+from tkinter import Tk, PhotoImage, Scale, PanedWindow, BooleanVar, DoubleVar
 from tkinter.ttk import Checkbutton as ttkCheckbutton
+from tkinter.ttk import Notebook as Notebook
 # 项目文件
 from Data.PartAttrMaps import MainWeaponsData, PartType11
 from images.Img_main import *
@@ -25,7 +26,7 @@ from design_reader import DesignAnalyser, ReadXML, Part, ArmorBoard, Rebar, Adva
 
 LOCAL_ADDRESS = os.getcwd()
 REDIRECT = True
-VERSION = '0.0.4'
+VERSION = '0.0.5'
 
 
 class MainHandler:
@@ -47,7 +48,14 @@ class MainHandler:
         """
         # 获取combobox的可用内容
         all_values = self.combox.cget('values')
-        next_index = list(all_values).index(self.combox.get())
+        try:
+            next_index = list(all_values).index(self.combox.get())
+        except ValueError:
+            show_time()
+            show_text(f" 请输入 含有", "stderr", False)
+            show_text("Design", "purple", False)
+            show_text(f"字样的文件夹下 的图纸名称！", "stderr", False)
+            return
         # 如果是鼠标事件
         if event is not None and event.delta < 0:
             next_index -= event.delta // 120
@@ -124,7 +132,8 @@ class TkinterGUI:
         self.ICO = PhotoImage(data=base64.b64decode(ICO))
         self.root.iconphoto(True, self.ICO)
         # ttk水平分割条
-        ttkStyle().configure('vertical.TSeparator', background=BG_COLOUR, foreground=BG_COLOUR)
+        self.Style = ttkStyle()
+        self.Style.configure('vertical.TSeparator', background=BG_COLOUR, foreground=BG_COLOUR)
         self.main_panedwindow = PanedWindow(self.root, orient='vertical', bg=BG_COLOUR2, relief='flat',
                                             sashrelief='flat', sashwidth=int(3 * RATE), sashpad=int(3 * RATE))
         self.main_panedwindow.pack(fill='both', expand=True)
@@ -194,8 +203,7 @@ class TkinterGUI:
         self.root.after(100, self.fade_in)
 
     def tab_changed(self, event):
-        if not LOADING:
-            self.current_Frame = self.all_frames[event.widget.index('current')]
+        ...
 
     def AnalFrame_animation(self):
         # 渐入，颜色加深
@@ -259,11 +267,11 @@ class CompareFrame:
         self.combox = text_with_combox(
             self.top1, '选择要对比的设计:', (FONT0, FONT_SIZE12), 16, 15, self.available_designs, False)
         # 添加按钮
-        ttkStyle().configure("3.TButton", padding=int(5 * RATE), relief="flat",
-                             background=BG_COLOUR, foreground='firebrick', font=(FONT0, FONT_SIZE12))
+        GUI.Style.configure("3.TButton", padding=int(5 * RATE), relief="flat",
+                            background=BG_COLOUR, foreground='firebrick', font=(FONT0, FONT_SIZE12))
         self.CompareBt = ttkButton(
-            style="3.TButton", master=self.top1, text='开始对比', width=int(10 * RATE), command=self.start)
-        self.CompareBt.pack(side='right', fill='y', expand=False, padx=int(100 * RATE))
+            style="3.TButton", master=self.top1, text='开始对比', width=14, command=self.start)
+        self.CompareBt.pack(side='right', fill='y', expand=False, padx=3)
         Frame(master=self.basic, bg=BG_COLOUR2, height=3).pack(side='top', fill='x', expand=False)
         # 添加右键菜单
         self.menu = MyMenu(self.basic, {'show_weight_relation': self.F1})
@@ -683,7 +691,8 @@ class ThreeDFrame:
                      "主武器": BooleanVar(), "防空炮": BooleanVar(),
                      "动力组": BooleanVar(),
                      "装饰": BooleanVar(),
-                     "进阶船壳": BooleanVar()}
+                     "截面": BooleanVar(), "纵向": BooleanVar(), "甲板": BooleanVar(),
+                     }
         for part_type, bool_ in self.vars.items():
             bool_.set(True)
         self.last_bool = dict([(part_type, True) for part_type in self.vars.keys()])
@@ -692,12 +701,38 @@ class ThreeDFrame:
         """
         -------------------------------------------------操作栏------------------------------------------------
         """
+        self.CD_x = DoubleVar()
+        self.CD_y = DoubleVar()
+        self.CD_z = DoubleVar()
+        self.CD_x.set(0)
+        self.CD_y.set(0)
+        self.CD_z.set(0)
+        self.top_x = Frame(self.right, bg=BG_COLOUR)
+        self.top_y = Frame(self.right, bg=BG_COLOUR)
+        self.top_z = Frame(self.right, bg=BG_COLOUR)
+        self.x_label = Label(self.top_x, text="X", bg=BG_COLOUR, fg="black", font=(FONT0, FONT_SIZE7))
+        self.y_label = Label(self.top_y, text="Y", bg=BG_COLOUR, fg="black", font=(FONT0, FONT_SIZE7))
+        self.z_label = Label(self.top_z, text="Z", bg=BG_COLOUR, fg="black", font=(FONT0, FONT_SIZE7))
+        # 三个滑动条，分别控制点的x,y,z坐标,范围为-100~100
+        self.x_scale = Scale(self.top_x, from_=-100, to=100, orient="horizontal", bg=BG_COLOUR, fg="black",
+                             highlightthickness=0, variable=self.CD_x, command=self.move_dot,
+                             resolution=0.5, length=int(200 * RATE))
+        self.y_scale = Scale(self.top_y, from_=-20, to=20, orient="horizontal", bg=BG_COLOUR, fg="black",
+                             highlightthickness=0, variable=self.CD_y, command=self.move_dot,
+                             resolution=0.5, length=int(200 * RATE))
+        self.z_scale = Scale(self.top_z, from_=-20, to=20, orient="horizontal", bg=BG_COLOUR, fg="black",
+                             highlightthickness=0, variable=self.CD_z, command=self.move_dot,
+                             resolution=0.5, length=int(200 * RATE))
         self.operation_frame()
+
         """
         -------------------------------------------------信息------------------------------------------------
         """
         self.menu = MyMenu(self.plt3dFrame, {'查看图例': self.show_legend})  # 添加右键菜单
         self.update_3d()
+
+    def move_dot(self, event):
+        self.plt3d.move_dot(self.CD_x.get(), self.CD_z.get(), self.CD_y.get())
 
     def filter_frame(self):
         self.filter.pack(side='top', fill='both', expand=False)
@@ -713,7 +748,7 @@ class ThreeDFrame:
                        ).pack(side='top', expand=True, pady=0)
         Frame(self.filter, bg=BG_COLOUR2, height=2).pack(side='top', fill='x', expand=False)
         # 进阶船壳筛选（底部）
-        self.add_hull_filter.pack(side='bottom', fill='x', expand=False)
+        self.add_hull_filter.pack(side='bottom')
         Frame(self.add_hull_filter, bg=BG_COLOUR2, height=4).pack(side='top', fill='x', expand=False)
         ttkCheckbutton(self.add_hull_filter, text='所有进阶船壳', variable=self.all_add_hull, onvalue=True, offvalue=False,
                        command=lambda: self.update_all(), style='TCheckbutton'
@@ -724,11 +759,10 @@ class ThreeDFrame:
         self.filter_right.pack(side='left', fill='y', expand=True)
         # 创建多选框并绑定函数
         for part_type, bool_ in self.vars.items():
-            if part_type in ["进阶船壳"]:
+            if part_type in ["截面", "纵向", "甲板"]:
                 checkbox = ttkCheckbutton(self.add_hull_filter, text=part_type, variable=bool_,
                                           command=lambda: self.update_3d())
-                checkbox.pack()
-                break
+                checkbox.pack(side='left', expand=False)
             elif part_type in ["船体", "装甲舱", "弹药库", "机库"]:
                 checkbox = ttkCheckbutton(self.filter_left, text=part_type, variable=bool_,
                                           command=lambda: self.update_3d())
@@ -738,24 +772,62 @@ class ThreeDFrame:
             checkbox.pack(anchor='w', expand=False)
 
     def operation_frame(self):
-        ...
+        Label(self.right, text='指示点位置', bg=BG_COLOUR, fg='black', font=(FONT0, FONT_SIZE12)
+              ).pack(side='top', expand=False, fill='x', pady=0)
+        self.top_x.pack(side='top', fill='x', padx=9, pady=0, expand=False)
+        self.top_y.pack(side='top', fill='x', padx=9, pady=0, expand=False)
+        self.top_z.pack(side='top', fill='x', padx=9, pady=0, expand=False)
+        self.x_label.pack(anchor="sw", side='left')
+        self.y_label.pack(anchor="sw", side='left')
+        self.z_label.pack(anchor="sw", side='left')
+
+        self.x_scale.pack(side='top', fill='x', padx=0, pady=0, expand=False)
+        self.y_scale.pack(side='top', fill='x', padx=0, pady=0, expand=False)
+        self.z_scale.pack(side='top', fill='x', padx=0, pady=0, expand=False)
+        # 绑定鼠标滚轮事件
+        self.x_scale.bind("<MouseWheel>", self.scale_mousewheel_x)
+        self.y_scale.bind("<MouseWheel>", self.scale_mousewheel_y)
+        self.z_scale.bind("<MouseWheel>", self.scale_mousewheel_z)
+
+    def scale_mousewheel_x(self, event):
+        if event.delta > 0:
+            self.x_scale.set(self.x_scale.get() + 0.5) if self.x_scale.get() < 100 else None
+        else:
+            self.x_scale.set(self.x_scale.get() - 0.5) if self.x_scale.get() > -100 else None
+
+    def scale_mousewheel_y(self, event):
+        if event.delta > 0:
+            self.y_scale.set(self.y_scale.get() + 0.5) if self.y_scale.get() < 20 else None
+        else:
+            self.y_scale.set(self.y_scale.get() - 0.5) if self.y_scale.get() > -20 else None
+
+    def scale_mousewheel_z(self, event):
+        if event.delta > 0:
+            self.z_scale.set(self.z_scale.get() + 0.5) if self.z_scale.get() < 20 else None
+        else:
+            self.z_scale.set(self.z_scale.get() - 0.5) if self.z_scale.get() > -20 else None
 
     def update_all(self):
         show_time()
         show_text(" 预览  ", "blue", False)
         if self.all_hull.get():
             for part_type, bool_ in self.vars.items():
-                bool_.set(True)
+                if part_type not in ["截面", "纵向", "甲板"]:
+                    bool_.set(True)
             show_text("所有零件—", "stdout", False)
         else:
             for part_type, bool_ in self.vars.items():
                 bool_.set(False)
             show_text("所有零件—", "gray", False)
         if self.all_add_hull.get():
-            self.vars["进阶船壳"].set(True)
+            for part_type, bool_ in self.vars.items():
+                if part_type in ["截面", "纵向", "甲板"]:
+                    bool_.set(True)
             show_text("进阶船壳", "stdout", False)
         else:
-            self.vars["进阶船壳"].set(False)
+            for part_type, bool_ in self.vars.items():
+                if part_type in ["截面", "纵向", "甲板"]:
+                    bool_.set(False)
             show_text("进阶船壳", "gray", False)
         self.update_3d()
 
@@ -795,6 +867,9 @@ class ThreeDFrame:
             hull_pos = None
         # 永久清空所有图像：
         self.plt3d.clear()
+        self.x_scale.set(0)
+        self.y_scale.set(0)
+        self.z_scale.set(0)
         self.plt3d.draw_ship(
             hull_data, hull_pos,
             None,
@@ -1025,14 +1100,12 @@ def show_time():
 
 if __name__ == '__main__':
     # 初始化GUI
-    LOADING = True
     GUI = TkinterGUI()
     GUI.init()
     Handler = MainHandler()
     GUI.Left.button.config(command=Handler.combox_update)
     GUI.Left.button2.config(command=Handler.save_data)
     Handler.combox_update()
-    LOADING = False
     # 启动主循环
     GUI.root.mainloop()
     # 存入数据：

@@ -1,20 +1,16 @@
 import base64
 import copy
-import math
-import threading
 import time
 from tkinter import Label
 
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection, PolyCollection
-from matplotlib.colors import LightSource
-from mpl_toolkits import mplot3d
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import patheffects
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from utils.TkGUI import ScaleFactor, FONT_SIZE9, FONT_SIZE10, FONT_SIZE12, \
     FONT_SIZE14, FONT_SIZE16, FONT_SIZE18, FONT_SIZE20, FONT_SIZE22, width_, RATE
+from Data import WeightRelationMap
 
 BG_COLOUR = 'Beige'
 BG_COLOUR2 = 'ivory'
@@ -369,20 +365,27 @@ class Plot3D:
         # 绘图
         plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
         plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-        plt.rcParams['agg.path.chunksize'] = 100000  # 解决绘图时出现的内存溢出问题
+        plt.rcParams['agg.path.chunksize'] = 500000  # 解决绘图时出现的内存溢出问题
         # 清晰度
         plt.rcParams['figure.dpi'] = dpi
         # 设置边距
         self.fig.subplots_adjust(left=left, right=1 - right, top=1 - top, bottom=bottom)
-        self.subp = self.fig.add_subplot(111, projection='3d')
+        self.subp = self.fig.add_subplot(111, projection='3d', facecolor=BG_COLOUR2)
         # 设置标题
         self.title = title
         if title:
             self.subp.set_title(self.title, fontsize=FONT_SIZE16)
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.canvas.get_tk_widget().place(x=place[0], y=place[1], anchor=place_anchor)
-        # 设置背景色
-        self.subp.set_facecolor(BG_COLOUR2)
+        # 将box的底面设置为透明
+        self.subp.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        self.subp.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        self.subp.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        # 将box的坐标轴设置为透明
+        self.subp.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+        self.subp.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+        self.subp.w_zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+        self.set_axes_preset([-1, 1], [-1, 1], [-1, 1], False, False, False)
         # 去掉所有边框
         self.subp.spines['top'].set_visible(False)
         self.subp.spines['right'].set_visible(False)
@@ -394,18 +397,15 @@ class Plot3D:
             "主武器": [], "防空炮": [],
             "动力组": [],
             "装饰": [],
-            "进阶船壳": [],
+            "截面": [], "纵向": [], "甲板": []
         }
-
         # 将鼠标滚轮时间绑定到缩放
         self.canvas.mpl_connect('scroll_event', self.on_scroll)
         # 事件绑定
         self.press_position = None
         self.release_position = None
-        # 更新
-        self.set_axes_preset((-10, 10), (-10, 10), (-10, 10), False, False, False)
+        self.control_dot = None
         self.canvas.draw()
-        self.canvas.flush_events()
 
     def plot(self, xs, ys, zs,
              x_range=(0, 10), y_range=(0, 10), z_range=(0, 10),
@@ -434,9 +434,19 @@ class Plot3D:
         if xs is None or ys is None or zs is None:
             self.subp.text(0.5, 0.5, '无数据', ha='center', va='center', fontsize=FONT_SIZE16, color='#6600bb')
             return
-
         self.set_axes_preset(x_range, y_range, z_range, show_ticks, show_label, show_grid)
-        self.canvas.draw()
+
+    def add_dot(self, x, y, z, color=None, size=50):
+        if color is None:
+            color = 'black'
+        # 绘制单个点
+        self.control_dot = self.subp.scatter(x, y, z, c=color, s=size, linewidths=0, alpha=0.7)
+
+    def move_dot(self, x, y, z):
+        if self.control_dot is not None:
+            self.control_dot._offsets3d = ([x], [y], [z])
+            self.canvas.flush_events()
+            self.canvas.draw()
 
     def set_axes_preset(self, x_range, y_range, z_range, show_ticks, show_label, show_grid):
         """
@@ -451,14 +461,6 @@ class Plot3D:
         """
         # 根据范围设置盒子的长宽比
         self.subp.set_box_aspect((x_range[1] - x_range[0], y_range[1] - y_range[0], z_range[1] - z_range[0]))
-        # 将box的底面设置为透明
-        self.subp.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        self.subp.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        self.subp.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        # 将box的坐标轴设置为透明
-        self.subp.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
-        self.subp.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
-        self.subp.w_zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
         # 设置坐标轴范围
         if x_range is not None:
             self.subp.set_xlim(*x_range)
@@ -566,7 +568,9 @@ class Plot3D:
         :return:
         """
         # print(event.button, event.step)
-        if event.button == 'up':
+        if self.subp.dist < 1 and event.button == 'up':
+            self.subp.dist = 0.5
+        elif event.button == 'up':
             self.subp.dist -= 0.5
         elif event.button == 'down':
             self.subp.dist += 0.5
@@ -582,6 +586,9 @@ class Plot3D:
         self.plot_rebar(rebar_data)
         self.plot_airfix(airfix_data)
         self.plot_part_dots(part_data, ship_size)
+        self.add_dot(0, 0, 0)
+        self.canvas.flush_events()
+        self.canvas.draw()
 
     def plot_advanced_hull(self, hull_data, hull_pos):
         """
@@ -657,11 +664,11 @@ class Plot3D:
             #    self.subp.scatter(segment_data[0], segment_data[1], segment_data[2], c='black', s=0.01)
             # )
             # 绘制船体外壳线
-            self.plot_map["进阶船壳"].append(
+            self.plot_map["截面"].append(
                 self.subp.plot(segment_data[0][:Len1], segment_data[1][:Len1], segment_data[2][:Len1],
                                c='black', linewidth=0.2)
             )
-            self.plot_map["进阶船壳"].append(
+            self.plot_map["截面"].append(
                 self.subp.plot(segment_data[0][Len1:], segment_data[1][Len1:], segment_data[2][Len1:],
                                c='black', linewidth=0.2)
             )
@@ -686,29 +693,30 @@ class Plot3D:
                             ]
                         ) + np.array(hull_pos)
                         dock_dots_.append(dots)
-                    pc = Poly3DCollection(dock_dots_, facecolors='tan', edgecolors='black', linewidths=0.1, alpha=0.9)
-                    self.plot_map["进阶船壳"].append(self.subp.add_collection3d(pc))
+                    pc = Poly3DCollection(dock_dots_, facecolors='tan', edgecolors='black',
+                                          # 置于底层
+                                          zorder=10, linewidths=0.1, alpha=0.5)
+                    self.plot_map["甲板"].append(self.subp.add_collection3d(pc))
                     # 绘制线条
-                    self.plot_map["进阶船壳"].append(
+                    self.plot_map["纵向"].append(
                         self.subp.plot(deck_data[i][0], deck_data[i][1], deck_data[i][2],
-                                       c='#000000', label='Deck', linewidth=0.1)
+                                       c='#000000', linewidth=0.1)
                     )
-                    self.plot_map["进阶船壳"].append(
+                    self.plot_map["纵向"].append(
                         self.subp.plot(bottom_data[i][0], bottom_data[i][1], bottom_data[i][2],
-                                       c='#000000', label='Bottom', linewidth=0.8)
+                                       c='#000000', linewidth=0.8)
                     )
                     continue
-                self.plot_map["进阶船壳"].append(
+                self.plot_map["纵向"].append(
                     self.subp.plot(deck_data[i][0], deck_data[i][1], deck_data[i][2],
                                    c='#000000', linewidth=1.5 * 0.6 ** (1.2 * (i + 1))
                                    ))
-                self.plot_map["进阶船壳"].append(
+                self.plot_map["纵向"].append(
                     self.subp.plot(bottom_data[i][0], bottom_data[i][1], bottom_data[i][2],
                                    c='#000000', linewidth=1.5 * 0.6 ** (1.2 * i)
                                    ))
         except IndexError and ValueError as e:
             print(e)
-        self.canvas.draw()
         hull_range = [x_range, y_range, z_range]
         return hull_range
 
@@ -720,10 +728,10 @@ class Plot3D:
         """
 
     def plot_rebar(self, rebar_data):
-        self.canvas.draw()
+        ...
 
     def plot_airfix(self, airfix_data):
-        self.canvas.draw()
+        ...
 
     def plot_part_dots(self, part_data, size):
         """
@@ -735,12 +743,12 @@ class Plot3D:
             return
         self.set_axes_preset(size[0], size[1], size[2], show_label=False, show_ticks=True, show_grid=True)
         color_map = {
-            "船体": "#888888", "装甲舱": "#ffff00", "火炮": "#ff0000", "鱼雷": "#0000ff", "防空炮": "#00ffff",
+            "船体": "#888888", "装甲舱": "#ffaa00", "火炮": "#ff0000", "鱼雷": "#0000ff", "防空炮": "#00ffff",
             "火控": "#ee00ff", "测距仪": "#ee00ff", "排烟器": "#00ff00", "传动": "#00ff00", "弹射器": "#ee00ff",
             "装饰": "#ee00ff"
         }
         size_map = {
-            "船体": 4, "装甲舱": 4, "火炮": 300, "鱼雷": 300, "防空炮": 50,
+            "船体": 4, "装甲舱": 25, "火炮": 300, "鱼雷": 300, "防空炮": 50,
             "火控": 4, "测距仪": 4, "排烟器": 300, "传动": 4, "弹射器": 4,
             "装饰": 4
         }
@@ -749,27 +757,75 @@ class Plot3D:
                 continue
             if part_class in "船体":
                 dots0 = []
-                dots_magazine = []
-                dots_plane = []
                 for part in parts:
+                    _x = part.PosX
+                    _y = part.PosY
+                    _z = part.PosZ
+                    _rx = part.RotX
+                    _ry = part.RotY
+                    _rz = part.RotZ
                     if part.ID in "弹药库":
-                        dots_magazine.append((part.PosX, part.PosZ, part.PosY))
+                        # 绘制面，正负 0.5
+                        plc = Poly3DCollection([
+                            [[_x - 0.5, _z + 0.5, _y - 0.5], [_x - 0.5, _z + 0.5, _y + 0.5],
+                             [_x + 0.5, _z + 0.5, _y + 0.5], [_x + 0.5, _z + 0.5, _y - 0.5]],
+                            [[_x - 0.5, _z - 0.5, _y - 0.5], [_x - 0.5, _z - 0.5, _y + 0.5],
+                             [_x + 0.5, _z - 0.5, _y + 0.5], [_x + 0.5, _z - 0.5, _y - 0.5]],
+                            [[_x - 0.5, _z - 0.5, _y - 0.5], [_x - 0.5, _z - 0.5, _y + 0.5],
+                             [_x - 0.5, _z + 0.5, _y + 0.5], [_x - 0.5, _z + 0.5, _y - 0.5]],
+                            [[_x + 0.5, _z - 0.5, _y - 0.5], [_x + 0.5, _z - 0.5, _y + 0.5],
+                             [_x + 0.5, _z + 0.5, _y + 0.5], [_x + 0.5, _z + 0.5, _y - 0.5]],
+                            [[_x - 0.5, _z - 0.5, _y - 0.5], [_x - 0.5, _z + 0.5, _y - 0.5],
+                             [_x + 0.5, _z + 0.5, _y - 0.5], [_x + 0.5, _z - 0.5, _y - 0.5]],
+                            [[_x - 0.5, _z - 0.5, _y + 0.5], [_x - 0.5, _z + 0.5, _y + 0.5],
+                             [_x + 0.5, _z + 0.5, _y + 0.5], [_x + 0.5, _z - 0.5, _y + 0.5]]],
+                            facecolors='red', linewidths=0, edgecolors='red', alpha=0.15, zsort='max')
+                        self.plot_map["弹药库"].append(plc)
+                        self.subp.add_collection3d(plc)
+
                     elif part.ID in "机库":
-                        dots_plane.append((part.PosX, part.PosZ, part.PosY))
+                        x_l = 1.5
+                        y_l = 1
+                        z_l = 1
+                        if _rx in [0, 180] and _ry in [0, 180] and _rz in [0, 180]:
+                            pass
+                        elif _rx in [90, 270] and _ry in [0, 180] and _rz in [0, 180]:
+                            x_l, y_l, z_l = x_l, z_l, y_l
+                        elif _rx in [0, 180] and _ry in [90, 270] and _rz in [0, 180]:
+                            x_l, y_l, z_l = z_l, y_l, x_l
+                        elif _rx in [0, 180] and _ry in [0, 180] and _rz in [90, 270]:
+                            x_l, y_l, z_l = y_l, x_l, z_l
+                        elif _rx in [90, 270] and _ry in [90, 270] and _rz in [0, 180]:
+                            x_l, y_l, z_l = z_l, x_l, y_l
+                        elif _rx in [0, 180] and _ry in [90, 270] and _rz in [90, 270]:
+                            x_l, y_l, z_l = y_l, z_l, x_l
+                        elif _rx in [90, 270] and _ry in [0, 180] and _rz in [90, 270]:
+                            x_l, y_l, z_l = x_l, z_l, y_l
+                        elif _rx in [90, 270] and _ry in [90, 270] and _rz in [90, 270]:
+                            x_l, y_l, z_l = z_l, y_l, x_l
+
+                        plc = Poly3DCollection([
+                            [[_x - x_l, _z + z_l, _y - y_l], [_x - x_l, _z + z_l, _y + y_l],
+                             [_x + x_l, _z + z_l, _y + y_l], [_x + x_l, _z + z_l, _y - y_l]],
+                            [[_x - x_l, _z - z_l, _y - y_l], [_x - x_l, _z - z_l, _y + y_l],
+                             [_x + x_l, _z - z_l, _y + y_l], [_x + x_l, _z - z_l, _y - y_l]],
+                            [[_x - x_l, _z - z_l, _y - y_l], [_x - x_l, _z - z_l, _y + y_l],
+                             [_x - x_l, _z + z_l, _y + y_l], [_x - x_l, _z + z_l, _y - y_l]],
+                            [[_x + x_l, _z - z_l, _y - y_l], [_x + x_l, _z - z_l, _y + y_l],
+                             [_x + x_l, _z + z_l, _y + y_l], [_x + x_l, _z + z_l, _y - y_l]],
+                            [[_x - x_l, _z - z_l, _y - y_l], [_x - x_l, _z + z_l, _y - y_l],
+                             [_x + x_l, _z + z_l, _y - y_l], [_x + x_l, _z - z_l, _y - y_l]],
+                            [[_x - x_l, _z - z_l, _y + y_l], [_x - x_l, _z + z_l, _y + y_l],
+                             [_x + x_l, _z + z_l, _y + y_l], [_x + x_l, _z - z_l, _y + y_l]]],
+                            facecolors='#ff5500', linewidths=0.5, edgecolors='#ff0000', alpha=0.25)
+                        self.plot_map["机库"].append(plc)
+                        self.subp.add_collection3d(plc)
                     else:
                         dots0.append((part.PosX, part.PosZ, part.PosY))
                 self.plot_map["船体"].append(self.subp.scatter(
                     np.array(dots0).T[0], np.array(dots0).T[1], np.array(dots0).T[2],
                     c=color_map[part_class], s=size_map[part_class], linewidths=0,
                 )) if dots0 else None
-                self.plot_map["弹药库"].append(self.subp.scatter(
-                    np.array(dots_magazine).T[0], np.array(dots_magazine).T[1], np.array(dots_magazine).T[2],
-                    c='red', s=size_map[part_class], linewidths=0,
-                )) if dots_magazine else None
-                self.plot_map["机库"].append(self.subp.scatter(
-                    np.array(dots_plane).T[0], np.array(dots_plane).T[1], np.array(dots_plane).T[2],
-                    c='orange', s=300, linewidths=0
-                )) if dots_plane else None
             else:
                 dots = []
                 for part in parts:
@@ -794,13 +850,13 @@ class Plot3D:
                             part.PosX, part.PosZ, part.PosY, part.ID[1:4], fontsize=FONT_SIZE9, ha='center',
                             va='center',
                             color='red'))
-                elif part_class in "鱼雷":
+                elif "雷" in part_class:
                     for part in parts:
                         # 设置偏移标签
                         self.plot_map[plot_map_name].append(self.subp.text(
                             part.PosX, part.PosZ, part.PosY, part.ID[:3], fontsize=FONT_SIZE9, ha='center', va='center',
                             color='blue'))
-                elif part_class in "动力组":
+                elif plot_map_name in "动力组":
                     for part in parts:
                         if "烟" in part.ID:
                             # 设置偏移标签
@@ -808,11 +864,6 @@ class Plot3D:
                                 part.PosX, part.PosZ, part.PosY, part.ID[:3], fontsize=FONT_SIZE9, ha='center',
                                 va='center',
                                 color='green'))
-        try:
-            self.canvas.draw()
-        except TypeError:
-            pass
-        self.canvas.flush_events()
 
     def hide_part(self, part_name):
         if self.plot_map[part_name]:
@@ -873,50 +924,21 @@ def get_weight_report(key, value, summary):
     }
     result = ""
     rate = value / summary
-    func_map = {
-        '船体': [-1.3947115825620539e-30, 5.107485923177481e-25, -6.872257611548716e-20, 4.1972710117142345e-15,
-               -1.0070996999562106e-10, -5.72427744494647e-07, 0.39800759621859816],
-        '船体标准差': [6.078666152723368e-12, -1.1643806479346983e-06, 0.07496756753477982],
-        '装甲舱增重': [2.1873354804949518e-30, -8.298797271975439e-25, 1.1152066328143505e-19, -6.393728375858707e-15,
-                  1.6876135199520476e-10, -3.505854334560816e-06, 0.16061221591422054],
-        '装甲舱增重标准差': [1.1683286165603566e-11, -2.350284943543656e-06, 0.13470928448345457],
-        '装甲板': [-3.353342760026788e-30, 1.489582019274834e-24, -2.507106258789155e-19, 2.0513505801090154e-14,
-                -9.223353782242262e-10, 2.563583896072783e-05, -0.017535729563585397],
-        '装甲板标准差': [8.777278454902682e-12, -2.1556486441628616e-06, 0.14518754483770843],
-        '动力系统': [9.692849828910045e-31, -4.688394070409831e-25, 9.099442421412573e-20, -9.151343796614318e-15,
-                 5.131796787993793e-10, -1.6164577839346152e-05, 0.29758839230701223],
-        '动力系统标准差': [1.5773513372183318e-11, -2.5128393844095646e-06, 0.10805718397837258],
-        '火炮': [-5.144254668636086e-31, 2.502743387704704e-25, -4.905377571300944e-20, 4.97843962841564e-15,
-               -2.7739973375718626e-10, 8.137470110110347e-06, 0.009362441550057915],
-        '火炮标准差': [3.775083653305585e-12, -7.704344769635432e-07, 0.0587800834627563],
-        '鱼雷': [1.4347442649212074e-30, -6.47691083967086e-25, 1.1246941967195014e-19, -9.470550363432245e-15,
-               4.0100156376508035e-10, -7.97564933785555e-06, 0.0588448288147438],
-        '鱼雷标准差': [6.533303900862829e-12, -7.275376801543273e-07, 0.022437222769103003],
-        '防空炮': [-6.486620279041837e-32, 2.9126072913981106e-26, -5.0746620602331395e-21, 4.2797166128162724e-16,
-                -1.7340835429901635e-11, 2.5520754619420783e-07, 0.0022301388902343997],
-        '防空炮标准差': [2.7232146245961322e-12, -1.6629161016452506e-07, 0.004936958084021908],
-        '舰载机增重': [1.8582013811477006e-32, -7.214795113894026e-27, 8.740773829712101e-22, -1.769226224209253e-17,
-                  -3.240765878119891e-12, 1.758437257886214e-07, 0.0013361462136587568],
-        '舰载机增重标准差': [2.5401307080822905e-12, -1.4938243866731885e-07, 0.005159750451394614],
-        '装饰': [7.173992701242175e-31, -3.261060099575226e-25, 5.770305521716261e-20, -5.083873304354278e-15,
-               2.38084088725392e-10, -5.985851086563891e-06, 0.08955396965506124],
-        '装饰标准差': [7.944765397261695e-12, -1.3511256160799873e-06, 0.07302145520601268],
-    }
-
-    range_hull = [np.polyval(func_map["船体"], summary), np.polyval(func_map["船体标准差"], summary)]
-    range_armor = [np.polyval(func_map["装甲舱增重"], summary), np.polyval(func_map["装甲舱增重标准差"], summary)]
-    range_armor_board = [np.polyval(func_map["装甲板"], summary), np.polyval(func_map["装甲板标准差"], summary)]
-    range_engine = [np.polyval(func_map["动力系统"], summary), np.polyval(func_map["动力系统标准差"], summary)]
-    range_gun = [np.polyval(func_map["火炮"], summary), np.polyval(func_map["火炮标准差"], summary)]
-    range_torpedo = [np.polyval(func_map["鱼雷"], summary), np.polyval(func_map["鱼雷标准差"], summary)]
-    range_AA = [np.polyval(func_map["防空炮"], summary), np.polyval(func_map["防空炮标准差"], summary)]
-    range_aircraft = [np.polyval(func_map["舰载机增重"], summary), np.polyval(func_map["舰载机增重标准差"], summary)]
-    range_decoration = [np.polyval(func_map["装饰"], summary), np.polyval(func_map["装饰标准差"], summary)]
-
+    range_hull = [np.polyval(WeightRelationMap["船体"], summary), np.polyval(WeightRelationMap["船体标准差"], summary)]
+    range_armor = [np.polyval(WeightRelationMap["装甲舱增重"], summary), np.polyval(WeightRelationMap["装甲舱增重标准差"], summary)]
+    range_armor_board = [np.polyval(WeightRelationMap["装甲板"], summary),
+                         np.polyval(WeightRelationMap["装甲板标准差"], summary)]
+    range_engine = [np.polyval(WeightRelationMap["动力系统"], summary), np.polyval(WeightRelationMap["动力系统标准差"], summary)]
+    range_gun = [np.polyval(WeightRelationMap["火炮"], summary), np.polyval(WeightRelationMap["火炮标准差"], summary)]
+    range_torpedo = [np.polyval(WeightRelationMap["鱼雷"], summary), np.polyval(WeightRelationMap["鱼雷标准差"], summary)]
+    range_AA = [np.polyval(WeightRelationMap["防空炮"], summary), np.polyval(WeightRelationMap["防空炮标准差"], summary)]
+    range_aircraft = [np.polyval(WeightRelationMap["舰载机增重"], summary),
+                      np.polyval(WeightRelationMap["舰载机增重标准差"], summary)]
+    range_decoration = [np.polyval(WeightRelationMap["装饰"], summary), np.polyval(WeightRelationMap["装饰标准差"], summary)]
     if key == "船体":
-        if rate > range_hull[0] + range_hull[1] * 3/2:
+        if rate > range_hull[0] + range_hull[1] * 3 / 2:
             result += WR_map["船体0"]
-        elif rate < range_hull[0] - range_hull[1] * 1/3:
+        elif rate < range_hull[0] - range_hull[1] * 1 / 3:
             result += WR_map["船体1"]
         else:
             result += WR_map["适中"]

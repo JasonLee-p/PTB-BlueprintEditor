@@ -6,6 +6,7 @@ import os
 import time
 import tkinter as tk
 import webbrowser
+import zlib
 from tkinter import ttk, messagebox
 
 from win32com.client import Dispatch
@@ -203,5 +204,6 @@ if __name__ == '__main__':
     FRONT_COLOR = '#aa3300'
     Root = MainWindow()
     program_data = base64.b64decode(PROGRAM.PGM)
+    program_data = zlib.decompress(program_data)
 
     Root.window.mainloop()
