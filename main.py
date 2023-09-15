@@ -24,7 +24,7 @@ from utils.plt_ import *
 from utils.weapon_selector import WeaponSelector
 from design_reader import DesignAnalyser, ReadXML, Part, ArmorBoard, Rebar, AdvancedHull
 
-LOCAL_ADDRESS = os.getcwd()
+LOCAL_ADDRESS = os.path.dirname(os.path.abspath(__file__))
 REDIRECT = True
 VERSION = '0.0.5'
 

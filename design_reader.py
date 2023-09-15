@@ -15,7 +15,7 @@ WEIGHT_MULTIPLIER = 0.216  # xml的weight值与真实重量的比例，也就是
 HULL_DENSITY = 0.2  # 普通船体的密度
 PLANE_WEIGHT = 32.4  # 飞机的增重
 NUM_STRS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-_LOCAL_ADDRESS = os.getcwd()  # 项目所在的文件夹
+_LOCAL_ADDRESS = os.path.dirname(os.path.abspath(__file__))
 
 
 class Part:
@@ -1103,6 +1103,7 @@ class DesignAnalyser:
             # 获取hash值
             store_dict = {
                 "设计者ID": DR_dict['CheakCode']['DesignerID'],
+                "设计名称": self.ShipName,
                 "吨位": self.Displacement,
                 "基础数据": self.right_frame0_data,
                 "二级数据": self.left_frame_data,

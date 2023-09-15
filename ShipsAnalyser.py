@@ -54,6 +54,9 @@ def read_json():
     # 进行数据清理
     del_ships = []
     for _key in _data.keys():
+        # 船名是否是DEX
+        if "DE-X型护航驱逐舰" in _data["设计名称"]:
+            del_ships.append(_key)
         weight_relation = _data[_key]['吨位关系']
         plane_num = int(_data[_key]["基础数据"]["right"][7].split("/")[0])
         if plane_num > 12:
